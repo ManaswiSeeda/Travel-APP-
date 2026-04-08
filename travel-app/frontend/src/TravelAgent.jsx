@@ -529,8 +529,9 @@ export default function TravelAgentOrchestrator() {
       await addLog("orchestrator", "All live data loaded successfully.", 250);
       setPhase("results");
     } catch (err) {
-      await addLog("orchestrator", `Error: ${err.message}`, 100);
-      setPhase("input");
+      console.error("Live API error:", err);
+      await addLog("orchestrator", `Error: ${err.message}`, 200);
+}
     }
   };
 
