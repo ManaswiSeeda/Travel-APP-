@@ -17,7 +17,7 @@ app.add_middleware(
 )
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
-SKY_HOST = os.getenv("SKY_HOST", "sky-scrapper.p.rapidapi.com")
+SKY_HOST = os.getenv("SKY_HOST", " skyscanner-flights-travel-api.p.rapidapi.com")
 BOOKING_HOST = os.getenv("BOOKING_HOST", "booking-com15.p.rapidapi.com")
 WEATHER_HOST = os.getenv("WEATHER_HOST", "open-weather13.p.rapidapi.com")
 
