@@ -306,12 +306,100 @@ function PipelineStatus({ steps, current }) {
     </div>
   );
 }
+function validateForm(form) {
+  const errors = {};
 
+  const allowedTripTypes = ["oneway", "roundtrip"];
+  const allowedStops = ["nonstop", "1 stop", "any"];
+  const allowedGenders = ["Male", "Female", "Mixed", "Prefer not to say"];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!form.from?.trim()) {
+    errors.from = "From city is required";
+  } else if (!/^[a-zA-Z\s]+$/.test(form.from.trim())) {
+    errors.from = "From city should contain letters only";
+  }
+
+  if (!form.to?.trim()) {
+    errors.to = "To city is required";
+  } else if (!/^[a-zA-Z\s]+$/.test(form.to.trim())) {
+    errors.to = "To city should contain letters only";
+  }
+
+  if (form.from?.trim().toLowerCase() === form.to?.trim().toLowerCase()) {
+    errors.to = "From and To cannot be the same";
+  }
+
+  if (!form.date) {
+    errors.date = "Departure date is required";
+  } else {
+    const depDate = new Date(form.date);
+    depDate.setHours(0, 0, 0, 0);
+    if (depDate < today) {
+      errors.date = "Departure date cannot be in the past";
+    }
+  }
+
+  if (!allowedTripTypes.includes(form.tripType)) {
+    errors.tripType = "Invalid trip type";
+  }
+
+  if (form.tripType === "roundtrip") {
+    if (!form.returnDate) {
+      errors.returnDate = "Return date is required";
+    } else {
+      const depDate = new Date(form.date);
+      const retDate = new Date(form.returnDate);
+      depDate.setHours(0, 0, 0, 0);
+      retDate.setHours(0, 0, 0, 0);
+
+      if (retDate <= depDate) {
+        errors.returnDate = "Return date must be after departure date";
+      }
+    }
+  }
+
+  if (!form.budget) {
+    errors.budget = "Budget is required";
+  } else if (isNaN(Number(form.budget)) || Number(form.budget) <= 0) {
+    errors.budget = "Budget must be a positive number";
+  }
+
+  if (!form.travelers?.trim()) {
+    errors.travelers = "At least one traveler is required";
+  } else {
+    const travelerList = form.travelers
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    if (travelerList.length === 0) {
+      errors.travelers = "Enter at least one valid traveler";
+    } else if (travelerList.length > 9) {
+      errors.travelers = "Maximum 9 travelers allowed";
+    } else if (travelerList.some((name) => !/^[a-zA-Z\s]+$/.test(name))) {
+      errors.travelers = "Traveler names should contain letters only";
+    }
+  }
+
+  if (form.gender && !allowedGenders.includes(form.gender)) {
+    errors.gender = "Invalid gender value";
+  }
+
+  if (!allowedStops.includes(form.stops)) {
+    errors.stops = "Invalid stops preference";
+  }
+
+  return errors;
+}
 export default function TravelAgentOrchestrator() {
   const [darkMode, setDarkMode] = useState(false);
   const [form, setForm] = useState({ from: "", to: "", date: "", returnDate: "", budget: "", travelers: "", gender: "", stops: "nonstop", tripType: "roundtrip" });
   const [phase, setPhase] = useState("input");
   const [logs, setLogs] = useState([]);
+  const [errors, setErrors] = useState({});
   const [pipelineStep, setPipelineStep] = useState(-1);
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
@@ -350,6 +438,11 @@ export default function TravelAgentOrchestrator() {
   const bookingRedirect = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(form.to)}&checkin=${encodeURIComponent(form.date || "")}&checkout=${encodeURIComponent(form.returnDate || "")}&no_rooms=1&group_adults=${travelerCount}`;
 
   const runOrchestrator = async () => {
+    const validationErrors = validateForm(form);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
     setPhase("running");
     setLogs([]);
     setPipelineStep(0);
