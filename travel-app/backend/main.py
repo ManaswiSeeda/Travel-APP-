@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import httpx
 import os
+from pydantic import BaseModel, field_validator, model_validator
+from typing import Literal, Optional
+from datetime import date
 
 load_dotenv()
 
@@ -15,7 +18,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
 SKY_HOST = os.getenv("SKY_HOST", " skyscanner-flights-travel-api.p.rapidapi.com")
 BOOKING_HOST = os.getenv("BOOKING_HOST", "booking-com15.p.rapidapi.com")
@@ -40,6 +42,61 @@ def mins_to_text(minutes: int) -> str:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+    
+class TripValidation(BaseModel):
+    origin: str
+    destination: str
+    departure_date: date
+    return_date: Optional[date] = None
+    adults: int
+    trip_type: Literal["oneway", "roundtrip"]
+    stops: Literal["nonstop", "1 stop", "any"]
+    budget: float
+
+    @field_validator("origin", "destination")
+    @classmethod
+    def validate_city(cls, value: str):
+        if not value or not value.strip():
+            raise ValueError("City is required")
+        if not value.replace(" ", "").isalpha():
+            raise ValueError("City must contain letters only")
+        return value.strip()
+
+    @field_validator("adults")
+    @classmethod
+    def validate_adults(cls, value: int):
+        if value < 1:
+            raise ValueError("At least 1 traveler required")
+        if value > 9:
+            raise ValueError("Maximum 9 travelers allowed")
+        return value
+
+    @field_validator("budget")
+    @classmethod
+    def validate_budget(cls, value: float):
+        if value <= 0:
+            raise ValueError("Budget must be greater than 0")
+        return value
+
+    @field_validator("departure_date")
+    @classmethod
+    def validate_departure_date(cls, value: date):
+        if value < date.today():
+            raise ValueError("Departure date cannot be in the past")
+        return value
+
+    @model_validator(mode="after")
+    def validate_trip(self):
+        if self.origin.strip().lower() == self.destination.strip().lower():
+            raise ValueError("Origin and destination cannot be the same")
+
+        if self.trip_type == "roundtrip":
+            if not self.return_date:
+                raise ValueError("Return date is required for roundtrip")
+            if self.return_date <= self.departure_date:
+                raise ValueError("Return date must be after departure date")
+
+        return self
 
 
 @app.get("/api/flights")
@@ -51,6 +108,18 @@ async def search_flights(
     adults: int = Query(1),
     cabin_class: str = Query("economy"),
 ):
+    trip_type = "roundtrip" if return_date else "oneway"
+
+TripValidation(
+    origin=origin,
+    destination=destination,
+    departure_date=departure_date,
+    return_date=return_date,
+    adults=adults,
+    trip_type=trip_type,
+    stops="any",
+    budget=1000
+)
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
@@ -141,6 +210,12 @@ async def search_hotels(
     adults: int = Query(1),
     room_qty: int = Query(1),
 ):
+    if not city or not city.strip():
+        raise HTTPException(status_code=400, detail="City is required")
+    if not checkin or not checkout:
+        raise HTTPException(status_code=400, detail="Check-in and checkout dates are required")
+    if adults < 1:
+        raise HTTPException(status_code=400, detail="At least 1 adult is required")
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
@@ -207,6 +282,8 @@ async def search_hotels(
 
 @app.get("/api/climate")
 async def climate(city: str = Query(...), lang: str = Query("EN")):
+    if not city or not city.strip():
+        raise HTTPException(status_code=400, detail="City is required")
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
