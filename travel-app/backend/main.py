@@ -127,7 +127,69 @@ def health():
         "booking_host": BOOKING_HOST,
         "weather_host": WEATHER_HOST,
     }
+@app.get("/api/airport-suggestions")
+async def airport_suggestions(q: str = Query(..., min_length=2)):
+    if not RAPIDAPI_KEY:
+        raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
+    query = q.strip()
+    if len(query) < 2:
+        return {"suggestions": []}
+
+    async with httpx.AsyncClient(timeout=20) as client:
+        airport_url = f"https://{SKY_HOST}/api/v1/searchAirport"
+        params = {"query": query}
+
+        debug_log("AIRPORT SUGGESTIONS SEARCH", airport_url, params)
+
+        res = await client.get(
+            airport_url,
+            params=params,
+            headers=rapid_headers(SKY_HOST),
+        )
+
+        if res.status_code != 200:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Airport suggestions lookup failed: {res.text}",
+            )
+
+        raw = res.json()
+        data = raw.get("data", [])
+
+        suggestions = []
+        for item in data[:8]:
+            presentation = item.get("presentation", {}) if isinstance(item, dict) else {}
+
+            title = (
+                presentation.get("title")
+                or item.get("name")
+                or item.get("airport_name")
+                or item.get("id")
+                or "Unknown"
+            )
+
+            subtitle = (
+                presentation.get("subtitle")
+                or item.get("subtitle")
+                or item.get("airport_code")
+                or item.get("iata_code")
+                or ""
+            )
+
+            airport_code = item.get("airport_code") or item.get("iata_code") or ""
+            entity_id = item.get("id") or item.get("skyId") or ""
+
+            suggestions.append({
+                "label": f"{title} ({airport_code})" if airport_code else title,
+                "title": title,
+                "subtitle": subtitle,
+                "airport_code": airport_code,
+                "id": entity_id,
+                "raw": item,
+            })
+
+        return {"suggestions": suggestions}
 
 @app.get("/api/flights")
 async def search_flights(
