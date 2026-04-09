@@ -285,15 +285,14 @@ async def search_flights(
                 "raw": item,
             })
 
-        return {
-            "flights": flights,
-            "source": "live",
-            "airport_lookup": {
-                "origin": departure_id,
-                "destination": arrival_id,
-            },
-        }
-
+       return {
+           "flights": flights,
+           "source": "google_flights",
+           "airport_lookup": {
+               "origin": departure_id,
+               "destination": arrival_id,
+           },
+       }
 
 @app.get("/api/hotels")
 async def search_hotels(
