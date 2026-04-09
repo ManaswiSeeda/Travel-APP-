@@ -205,7 +205,7 @@ function SuggestionInput({
               }}
             >
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                {item.display_name || item.label || item.name || item.city || "Unknown"}
+                {item.label}
               </div>
               {item.subtitle && (
                 <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
@@ -829,14 +829,7 @@ export default function TravelAgentOrchestrator() {
   };
 
   const selectSuggestion = (field, suggestion) => {
-    const inputValue =
-      suggestion.city ||
-      suggestion.name ||
-      suggestion.display_name ||
-      (suggestion.label ? suggestion.label.replace(/\s*\([A-Z0-9]{3,4}\)\s*$/, "") : "") ||
-      "";
-
-    updateField(field, inputValue.trim());
+    updateField(field, suggestion.title || suggestion.label || "");
 
     if (field === "from") {
       setFromSuggestions([]);
@@ -862,10 +855,6 @@ export default function TravelAgentOrchestrator() {
     setToSuggestions([]);
     setShowFromSuggestions(false);
     setShowToSuggestions(false);
-  };
-
-  const confirmTrip = () => {
-    setPhase("confirmed");
   };
 
   const runOrchestrator = async () => {
@@ -1709,184 +1698,16 @@ export default function TravelAgentOrchestrator() {
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        marginTop: 18,
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center", flexWrap: "wrap" }}>
                       <BookButton href={googleFlightsRedirect} label="Book flight on Google Flights" color="#0984E3" />
                       {form.tripType === "roundtrip" && (
                         <BookButton href={bookingRedirect} label="Book hotel on Booking.com" color="#E17055" />
                       )}
-                      <button
-                        onClick={confirmTrip}
-                        style={{
-                          padding: "10px 20px",
-                          borderRadius: 8,
-                          border: "none",
-                          background: "#00B894",
-                          color: "#fff",
-                          fontWeight: 700,
-                          fontSize: 13,
-                          cursor: "pointer",
-                        }}
-                      >
-                        OK / Confirm Trip
-                      </button>
                     </div>
                   </div>
                 )}
               </>
             )}
-          </div>
-        )}
-
-        {phase === "confirmed" && (
-          <div style={{ animation: "fadeSlide 0.5s ease" }}>
-            <div
-              style={{
-                background: "var(--card-bg)",
-                border: "1px solid var(--border)",
-                borderRadius: 16,
-                padding: 32,
-                textAlign: "center",
-                maxWidth: 700,
-                margin: "0 auto",
-              }}
-            >
-              <div style={{ fontSize: 42, marginBottom: 12 }}>✓</div>
-
-              <h2
-                style={{
-                  fontSize: 26,
-                  fontWeight: 800,
-                  marginBottom: 10,
-                  color: "var(--text-primary)",
-                }}
-              >
-                Thank you for choosing this website
-              </h2>
-
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "var(--text-secondary)",
-                  marginBottom: 24,
-                  lineHeight: 1.6,
-                }}
-              >
-                Your selected trip summary is shown below. We hope you have a wonderful journey.
-              </p>
-
-              <div
-                style={{
-                  background: "var(--input-bg)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 12,
-                  padding: 20,
-                  textAlign: "left",
-                  marginBottom: 24,
-                }}
-              >
-                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 14 }}>Selected Trip</div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, fontSize: 13 }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                      Route
-                    </div>
-                    <div style={{ fontWeight: 700 }}>{form.from} → {form.to}</div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                      Trip type
-                    </div>
-                    <div style={{ fontWeight: 700 }}>
-                      {form.tripType === "oneway" ? "One way" : `${nights} nights · ${nights + 1} days`}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                      Dates
-                    </div>
-                    <div style={{ fontWeight: 700 }}>
-                      {form.tripType === "oneway"
-                        ? formatDate(form.date)
-                        : `${formatDate(form.date)} → ${formatDate(form.returnDate)}`}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                      Travelers
-                    </div>
-                    <div style={{ fontWeight: 700 }}>{form.travelers || "1 traveler"}</div>
-                  </div>
-
-                  {selectedFlightData && (
-                    <div>
-                      <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                        Flight
-                      </div>
-                      <div style={{ fontWeight: 700, color: "#0984E3" }}>
-                        {selectedFlightData.airline} ·{" "}
-                        {selectedFlightData.formattedPrice || `$${Number(selectedFlightData.price || 0).toLocaleString()}`}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedHotelData && (
-                    <div>
-                      <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                        Hotel
-                      </div>
-                      <div style={{ fontWeight: 700, color: "#E17055" }}>
-                        {selectedHotelData.name} ·{" "}
-                        {selectedHotelData.formattedPrice ||
-                          `${selectedHotelData.currency || "USD"} ${Number(selectedHotelData.price || 0).toLocaleString()}`}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 16,
-                    padding: "12px",
-                    background: "#00B89420",
-                    borderRadius: 8,
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>Estimated total</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#00B894" }}>
-                    ${estimatedTotal.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={resetTrip}
-                style={{
-                  padding: "12px 24px",
-                  borderRadius: 10,
-                  border: "none",
-                  background: "linear-gradient(135deg, #6C5CE7, #00B894)",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  cursor: "pointer",
-                }}
-              >
-                Home Page
-              </button>
-            </div>
           </div>
         )}
       </div>
