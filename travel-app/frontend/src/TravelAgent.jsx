@@ -669,8 +669,7 @@ export default function TravelAgentOrchestrator() {
     setFlights([]);
     setHotels([]);
   };
-
-  const runOrchestrator = async () => {
+   const runOrchestrator = async () => {
     const validationErrors = validateForm(form);
     setErrors(validationErrors);
 
