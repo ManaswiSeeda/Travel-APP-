@@ -259,41 +259,117 @@ async def search_flights(
             data = raw.get("data")
 
             if isinstance(data, dict):
-                all_flights = (
-                    data.get("best_flights", [])
-                    or data.get("other_flights", [])
-                    or data.get("flights", [])
-                    or data.get("results", [])
-                    or data.get("itineraries", [])
-                )
+                for key in [
+                    "best_flights",
+                    "other_flights",
+                    "flights",
+                    "results",
+                    "itineraries",
+                    "items",
+                ]:
+                    value = data.get(key, [])
+                    if isinstance(value, list) and value:
+                        all_flights = value
+                        print(f"FOUND FLIGHTS UNDER data['{key}']")
+                        break
+
+                # if one of these keys is a dict instead of list, unwrap inner list
+                if not all_flights:
+                    for key in [
+                        "best_flights",
+                        "other_flights",
+                        "flights",
+                        "results",
+                        "itineraries",
+                        "items",
+                    ]:
+                        value = data.get(key)
+                        if isinstance(value, dict):
+                            for inner_key in ["items", "results", "flights", "itineraries"]:
+                                inner_value = value.get(inner_key, [])
+                                if isinstance(inner_value, list) and inner_value:
+                                    all_flights = inner_value
+                                    print(f"FOUND FLIGHTS UNDER data['{key}']['{inner_key}']")
+                                    break
+                        if all_flights:
+                            break
+
             elif isinstance(data, list):
                 all_flights = data
+                print("FOUND FLIGHTS UNDER data list")
 
-        if not all_flights:
-            all_flights = (
-                raw.get("flights", [])
-                or raw.get("results", [])
-                or raw.get("itineraries", [])
-            )
+        if not all_flights and isinstance(raw, dict):
+            for key in [
+                "flights",
+                "results",
+                "itineraries",
+                "items",
+                "best_flights",
+                "other_flights",
+            ]:
+                value = raw.get(key, [])
+                if isinstance(value, list) and value:
+                    all_flights = value
+                    print(f"FOUND FLIGHTS UNDER raw['{key}']")
+                    break
+
+            if not all_flights:
+                for key in [
+                    "flights",
+                    "results",
+                    "itineraries",
+                    "items",
+                    "best_flights",
+                    "other_flights",
+                ]:
+                    value = raw.get(key)
+                    if isinstance(value, dict):
+                        for inner_key in ["items", "results", "flights", "itineraries"]:
+                            inner_value = value.get(inner_key, [])
+                            if isinstance(inner_value, list) and inner_value:
+                                all_flights = inner_value
+                                print(f"FOUND FLIGHTS UNDER raw['{key}']['{inner_key}']")
+                                break
+                    if all_flights:
+                        break
+
+        if not isinstance(all_flights, list):
+            print("WARNING: all_flights is not a list, converting to empty list")
+            print("ACTUAL TYPE:", type(all_flights))
+            print("ACTUAL VALUE:", all_flights)
+            all_flights = []
 
         print("PARSED FLIGHTS COUNT:", len(all_flights))
 
         flights = []
         for item in all_flights[:10]:
+            if not isinstance(item, dict):
+                continue
+
             flights_list = (
                 item.get("flights", [])
                 or item.get("legs", [])
                 or item.get("segments", [])
+                or item.get("itinerary", [])
             )
 
-            first_leg = flights_list[0] if flights_list else {}
-            last_leg = flights_list[-1] if flights_list else {}
+            if isinstance(flights_list, dict):
+                flights_list = (
+                    flights_list.get("segments", [])
+                    or flights_list.get("legs", [])
+                    or flights_list.get("flights", [])
+                    or []
+                )
+
+            first_leg = flights_list[0] if isinstance(flights_list, list) and flights_list else {}
+            last_leg = flights_list[-1] if isinstance(flights_list, list) and flights_list else {}
 
             airline_name = (
                 first_leg.get("airline")
                 or first_leg.get("name")
                 or first_leg.get("carrier")
                 or item.get("airline")
+                or item.get("name")
                 or "Unknown Airline"
             )
 
@@ -315,7 +391,7 @@ async def search_flights(
                 or ""
             )
 
-            if flights_list:
+            if isinstance(flights_list, list) and flights_list:
                 stops_count = max(len(flights_list) - 1, 0)
             else:
                 stops_count = item.get("stops", 0) or item.get("stop_count", 0) or 0
@@ -327,6 +403,12 @@ async def search_flights(
                 or 0
             )
 
+            if not isinstance(duration_mins, int):
+                try:
+                    duration_mins = int(duration_mins)
+                except Exception:
+                    duration_mins = 0
+
             price = (
                 item.get("price")
                 or item.get("amount")
@@ -336,12 +418,6 @@ async def search_flights(
 
             if isinstance(price, dict):
                 price = price.get("raw") or price.get("value") or 0
-
-            if not isinstance(duration_mins, int):
-                try:
-                    duration_mins = int(duration_mins)
-                except Exception:
-                    duration_mins = 0
 
             flights.append({
                 "airline": airline_name,
