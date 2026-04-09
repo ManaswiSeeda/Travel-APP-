@@ -389,7 +389,7 @@ async def search_flights(
                     "destination_id": arrival_id,
                 },
             }
-        }
+        
 
 @app.get("/api/hotels")
 async def search_hotels(
