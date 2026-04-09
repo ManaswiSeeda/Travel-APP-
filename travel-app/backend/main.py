@@ -382,7 +382,7 @@ async def search_hotels(
             "units": "metric",
             "temperature_unit": "c",
             "languagecode": "en-us",
-            "currency_code": "INR",
+            "currency_code": "USD",   
         }
         debug_log("HOTEL SEARCH", hotel_url, hotel_params)
 
