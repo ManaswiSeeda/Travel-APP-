@@ -12,7 +12,8 @@ const AGENT_CONFIG = {
 
 function calcNights(dep, ret) {
   if (!dep || !ret) return 0;
-  const d1 = new Date(dep), d2 = new Date(ret);
+  const d1 = new Date(dep);
+  const d2 = new Date(ret);
   const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
   return diff > 0 ? diff : 0;
 }
@@ -20,7 +21,12 @@ function calcNights(dep, ret) {
 function formatDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function addDays(dateStr, days) {
@@ -32,13 +38,22 @@ function addDays(dateStr, days) {
 function AgentBadge({ agent, small }) {
   const cfg = AGENT_CONFIG[agent];
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: small ? 4 : 6,
-      background: cfg.color + "18", border: `1px solid ${cfg.color}40`,
-      borderRadius: 20, padding: small ? "2px 8px" : "4px 12px",
-      fontSize: small ? 10 : 11, fontWeight: 600, color: cfg.color,
-      letterSpacing: "0.03em", textTransform: "uppercase",
-    }}>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: small ? 4 : 6,
+        background: cfg.color + "18",
+        border: `1px solid ${cfg.color}40`,
+        borderRadius: 20,
+        padding: small ? "2px 8px" : "4px 12px",
+        fontSize: small ? 10 : 11,
+        fontWeight: 600,
+        color: cfg.color,
+        letterSpacing: "0.03em",
+        textTransform: "uppercase",
+      }}
+    >
       <span style={{ fontSize: small ? 10 : 13 }}>{cfg.icon}</span>
       {cfg.name}
     </div>
@@ -48,29 +63,59 @@ function AgentBadge({ agent, small }) {
 function LogEntry({ agent, message, timestamp }) {
   const cfg = AGENT_CONFIG[agent];
   return (
-    <div style={{
-      borderLeft: `3px solid ${cfg.color}`, padding: "12px 16px", margin: "8px 0",
-      background: cfg.color + "08", borderRadius: "0 8px 8px 0",
-      animation: "fadeSlide 0.4s ease",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+    <div
+      style={{
+        borderLeft: `3px solid ${cfg.color}`,
+        padding: "12px 16px",
+        margin: "8px 0",
+        background: cfg.color + "08",
+        borderRadius: "0 8px 8px 0",
+        animation: "fadeSlide 0.4s ease",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 6,
+        }}
+      >
         <AgentBadge agent={agent} small />
-        <span style={{ fontSize: 10, color: "#888", fontFamily: "monospace" }}>{timestamp}</span>
+        <span style={{ fontSize: 10, color: "#888", fontFamily: "monospace" }}>
+          {timestamp}
+        </span>
       </div>
-      <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5 }}>{message}</div>
+      <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5 }}>
+        {message}
+      </div>
     </div>
   );
 }
 
 function BookButton({ href, label, color }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-      background: color, color: "#fff", textDecoration: "none",
-      cursor: "pointer", border: "none", transition: "opacity 0.2s",
-      letterSpacing: "0.02em",
-    }}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "8px 16px",
+        borderRadius: 8,
+        fontSize: 12,
+        fontWeight: 700,
+        background: color,
+        color: "#fff",
+        textDecoration: "none",
+        cursor: "pointer",
+        border: "none",
+        transition: "opacity 0.2s",
+        letterSpacing: "0.02em",
+      }}
+    >
       {label} →
     </a>
   );
@@ -82,25 +127,44 @@ function FlightCard({ flight, selected, onSelect, redirectUrl }) {
   const displayPrice = flight.formattedPrice || `₹${Number(flight.price || 0).toLocaleString()}`;
 
   return (
-    <div onClick={onSelect} style={{
-      border: selected ? "2px solid #0984E3" : "1px solid var(--border)",
-      borderRadius: 10, padding: 14, cursor: "pointer",
-      background: selected ? "#0984E310" : "var(--card-bg)",
-      transition: "all 0.2s", marginBottom: 8,
-    }}>
+    <div
+      onClick={onSelect}
+      style={{
+        border: selected ? "2px solid #0984E3" : "1px solid var(--border)",
+        borderRadius: 10,
+        padding: 14,
+        cursor: "pointer",
+        background: selected ? "#0984E310" : "var(--card-bg)",
+        transition: "all 0.2s",
+        marginBottom: 8,
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{flight.airline || "Unknown Airline"}</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+            {flight.airline || "Unknown Airline"}
+          </div>
           <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
             {dep} → {arr}
           </div>
           <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-            {flight.durationText || flight.duration || ""} · {flight.stops === 0 ? "Non-stop" : `${flight.stops} stop`}
+            {flight.durationText || flight.duration || ""} ·{" "}
+            {flight.stops === 0 ? "Non-stop" : `${flight.stops} stop`}
           </div>
         </div>
-        <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div
+          style={{
+            textAlign: "right",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 6,
+          }}
+        >
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: "#0984E3" }}>{displayPrice}</div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: "#0984E3" }}>
+              {displayPrice}
+            </div>
             <div style={{ fontSize: 10, color: "#888" }}>per person</div>
           </div>
           {selected && <BookButton href={redirectUrl} label="Continue to Skyscanner" color="#0984E3" />}
@@ -116,34 +180,62 @@ function HotelCard({ hotel, selected, onSelect, redirectUrl, nights }) {
   const amenities = hotel.amenities || [];
 
   return (
-    <div onClick={onSelect} style={{
-      border: selected ? "2px solid #E17055" : "1px solid var(--border)",
-      borderRadius: 10, padding: 14, cursor: "pointer",
-      background: selected ? "#E1705510" : "var(--card-bg)",
-      transition: "all 0.2s", marginBottom: 8,
-    }}>
+    <div
+      onClick={onSelect}
+      style={{
+        border: selected ? "2px solid #E17055" : "1px solid var(--border)",
+        borderRadius: 10,
+        padding: 14,
+        cursor: "pointer",
+        background: selected ? "#E1705510" : "var(--card-bg)",
+        transition: "all 0.2s",
+        marginBottom: 8,
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{hotel.name || "Unknown Hotel"}</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+            {hotel.name || "Unknown Hotel"}
+          </div>
           <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
             {hotel.rating ? `★ ${hotel.rating}` : "No rating"} · {hotel.area || "City area"}
           </div>
           {amenities.length > 0 && (
             <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
               {amenities.slice(0, 5).map((a) => (
-                <span key={a} style={{
-                  fontSize: 9, background: "#E1705515", color: "#E17055",
-                  padding: "2px 6px", borderRadius: 4, fontWeight: 600,
-                }}>{a}</span>
+                <span
+                  key={a}
+                  style={{
+                    fontSize: 9,
+                    background: "#E1705515",
+                    color: "#E17055",
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    fontWeight: 600,
+                  }}
+                >
+                  {a}
+                </span>
               ))}
             </div>
           )}
         </div>
-        <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div
+          style={{
+            textAlign: "right",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 6,
+          }}
+        >
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: "#E17055" }}>{displayPrice}</div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: "#E17055" }}>
+              {displayPrice}
+            </div>
             <div style={{ fontSize: 10, color: "#888" }}>
-              per night{nights > 0 ? ` · ${hotel.currency || "INR"} ${(priceValue * nights).toLocaleString()} total` : ""}
+              per night
+              {nights > 0 ? ` · ${hotel.currency || "INR"} ${(priceValue * nights).toLocaleString()} total` : ""}
             </div>
           </div>
           {selected && <BookButton href={redirectUrl} label="Continue to Booking.com" color="#E17055" />}
@@ -155,10 +247,14 @@ function HotelCard({ hotel, selected, onSelect, redirectUrl, nights }) {
 
 function ClimateCard({ climate }) {
   return (
-    <div style={{
-      background: "linear-gradient(135deg, #FDCB6E20, #00B89410)",
-      border: "1px solid #FDCB6E40", borderRadius: 12, padding: 20,
-    }}>
+    <div
+      style={{
+        background: "linear-gradient(135deg, #FDCB6E20, #00B89410)",
+        border: "1px solid #FDCB6E40",
+        borderRadius: 12,
+        padding: 20,
+      }}
+    >
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {[
           { label: "Temperature", value: climate.temp, icon: "◎" },
@@ -168,15 +264,34 @@ function ClimateCard({ climate }) {
         ].map((item) => (
           <div key={item.label} style={{ textAlign: "center" }}>
             <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{item.value || "N/A"}</div>
-            <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
+              {item.value || "N/A"}
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: "#888",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {item.label}
+            </div>
           </div>
         ))}
       </div>
-      <div style={{
-        marginTop: 16, padding: "10px 14px", background: "#FDCB6E20",
-        borderRadius: 8, fontSize: 12, color: "#B7950B", fontWeight: 600, textAlign: "center",
-      }}>
+      <div
+        style={{
+          marginTop: 16,
+          padding: "10px 14px",
+          background: "#FDCB6E20",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#B7950B",
+          fontWeight: 600,
+          textAlign: "center",
+        }}
+      >
         Advisory: {climate.advisory || "Check live conditions before departure"}
       </div>
     </div>
@@ -194,31 +309,65 @@ function ItineraryCard({ form, nights, climate }) {
   const days = [];
   for (let i = 0; i < nights + 1; i++) {
     const date = addDays(form.date, i);
-    const dateStr = date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-    let type, label;
-    if (i === 0) { type = "arrival"; label = "Arrival day"; }
-    else if (i === nights) { type = "departure"; label = "Departure day"; }
-    else if (i % 2 === 1) { type = "explore"; label = "Explore & discover"; }
-    else { type = "adventure"; label = "Adventure day"; }
+    const dateStr = date.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+
+    let type;
+    let label;
+
+    if (i === 0) {
+      type = "arrival";
+      label = "Arrival day";
+    } else if (i === nights) {
+      type = "departure";
+      label = "Departure day";
+    } else if (i % 2 === 1) {
+      type = "explore";
+      label = "Explore & discover";
+    } else {
+      type = "adventure";
+      label = "Adventure day";
+    }
+
     days.push({ day: i + 1, date: dateStr, type, label, activities: activities[type] });
   }
 
-  const colors = { arrival: "#00B894", explore: "#0984E3", adventure: "#6C5CE7", departure: "#E17055" };
+  const colors = {
+    arrival: "#00B894",
+    explore: "#0984E3",
+    adventure: "#6C5CE7",
+    departure: "#E17055",
+  };
 
   return (
-    <div style={{
-      background: "var(--card-bg)", border: "1px solid var(--border)",
-      borderRadius: 14, padding: 20, marginBottom: 20,
-    }}>
+    <div
+      style={{
+        background: "var(--card-bg)",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: 20,
+        marginBottom: 20,
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <AgentBadge agent="planning" />
           <span style={{ fontSize: 14, fontWeight: 700 }}>Itinerary</span>
         </div>
-        <div style={{
-          background: "#6C5CE715", border: "1px solid #6C5CE730", borderRadius: 8,
-          padding: "4px 10px", fontSize: 11, fontWeight: 700, color: "#6C5CE7",
-        }}>
+        <div
+          style={{
+            background: "#6C5CE715",
+            border: "1px solid #6C5CE730",
+            borderRadius: 8,
+            padding: "4px 10px",
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#6C5CE7",
+          }}
+        >
           {nights} nights · {nights + 1} days
         </div>
       </div>
@@ -230,38 +379,63 @@ function ItineraryCard({ form, nights, climate }) {
       {days.map((day, idx) => (
         <div key={idx} style={{ display: "flex", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 24, flexShrink: 0 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: "50%", background: colors[day.type],
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 10, color: "#fff", fontWeight: 800, flexShrink: 0,
-            }}>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: colors[day.type],
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                color: "#fff",
+                fontWeight: 800,
+                flexShrink: 0,
+              }}
+            >
               {day.day}
             </div>
-            {idx < days.length - 1 && (
-              <div style={{ width: 2, flex: 1, background: "var(--border)", minHeight: 40 }} />
-            )}
+            {idx < days.length - 1 && <div style={{ width: 2, flex: 1, background: "var(--border)", minHeight: 40 }} />}
           </div>
+
           <div style={{ flex: 1, paddingBottom: idx < days.length - 1 ? 16 : 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <span style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>{day.label}</span>
               <span style={{ fontSize: 10, color: "#888", fontFamily: "monospace" }}>{day.date}</span>
             </div>
+
             {climate && idx === 0 && (
-              <div style={{
-                fontSize: 10, color: "#B7950B", background: "#FDCB6E18",
-                padding: "3px 8px", borderRadius: 4, marginBottom: 6, display: "inline-block", fontWeight: 600,
-              }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#B7950B",
+                  background: "#FDCB6E18",
+                  padding: "3px 8px",
+                  borderRadius: 4,
+                  marginBottom: 6,
+                  display: "inline-block",
+                  fontWeight: 600,
+                }}
+              >
                 {climate.condition} · {climate.temp}
               </div>
             )}
+
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
               {day.activities.map((act, j) => (
-                <span key={j} style={{
-                  fontSize: 10, padding: "3px 8px", borderRadius: 4,
-                  background: colors[day.type] + "12",
-                  color: colors[day.type], fontWeight: 500,
-                  border: `1px solid ${colors[day.type]}25`,
-                }}>
+                <span
+                  key={j}
+                  style={{
+                    fontSize: 10,
+                    padding: "3px 8px",
+                    borderRadius: 4,
+                    background: colors[day.type] + "12",
+                    color: colors[day.type],
+                    fontWeight: 500,
+                    border: `1px solid ${colors[day.type]}25`,
+                  }}
+                >
                   {act}
                 </span>
               ))}
@@ -280,25 +454,38 @@ function PipelineStatus({ steps, current }) {
         const done = i < current;
         const active = i === current;
         const cfg = AGENT_CONFIG[step.agent];
+
         return (
           <div key={i} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: "50%",
-              background: done ? cfg.color : active ? cfg.color + "30" : "var(--card-bg)",
-              border: `2px solid ${done || active ? cfg.color : "var(--border)"}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, color: done ? "#fff" : active ? cfg.color : "#888",
-              fontWeight: 700, flexShrink: 0,
-              animation: active ? "pulse 1.5s ease infinite" : "none",
-            }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: done ? cfg.color : active ? cfg.color + "30" : "var(--card-bg)",
+                border: `2px solid ${done || active ? cfg.color : "var(--border)"}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 14,
+                color: done ? "#fff" : active ? cfg.color : "#888",
+                fontWeight: 700,
+                flexShrink: 0,
+                animation: active ? "pulse 1.5s ease infinite" : "none",
+              }}
+            >
               {done ? "✓" : cfg.icon}
             </div>
             {i < steps.length - 1 && (
-              <div style={{
-                flex: 1, height: 2, minWidth: 20,
-                background: done ? cfg.color : "var(--border)",
-                transition: "background 0.5s",
-              }} />
+              <div
+                style={{
+                  flex: 1,
+                  height: 2,
+                  minWidth: 20,
+                  background: done ? cfg.color : "var(--border)",
+                  transition: "background 0.5s",
+                }}
+              />
             )}
           </div>
         );
@@ -306,9 +493,9 @@ function PipelineStatus({ steps, current }) {
     </div>
   );
 }
+
 function validateForm(form) {
   const errors = {};
-
   const allowedTripTypes = ["oneway", "roundtrip"];
   const allowedStops = ["nonstop", "1 stop", "any"];
   const allowedGenders = ["Male", "Female", "Mixed", "Prefer not to say"];
@@ -394,9 +581,21 @@ function validateForm(form) {
 
   return errors;
 }
+
 export default function TravelAgentOrchestrator() {
   const [darkMode, setDarkMode] = useState(false);
-  const [form, setForm] = useState({ from: "", to: "", date: "", returnDate: "", budget: "", travelers: "", gender: "", stops: "nonstop", tripType: "roundtrip" });
+  const [form, setForm] = useState({
+    from: "",
+    to: "",
+    date: "",
+    returnDate: "",
+    budget: "",
+    travelers: "",
+    gender: "",
+    stops: "nonstop",
+    tripType: "roundtrip",
+  });
+
   const [phase, setPhase] = useState("input");
   const [logs, setLogs] = useState([]);
   const [errors, setErrors] = useState({});
@@ -425,24 +624,61 @@ export default function TravelAgentOrchestrator() {
   }, [logs]);
 
   const addLog = (agent, message, delay = 0) =>
-    new Promise((r) =>
+    new Promise((resolve) =>
       setTimeout(() => {
         const ts = new Date().toLocaleTimeString();
         setLogs((prev) => [...prev, { agent, message, timestamp: ts }]);
-        r();
+        resolve();
       }, delay)
     );
 
-  const travelerCount = Math.max(1, (form.travelers || "").split(",").map((x) => x.trim()).filter(Boolean).length || 1);
-  const skyscannerRedirect = `https://www.skyscanner.co.in/transport/flights?from=${encodeURIComponent(form.from)}&to=${encodeURIComponent(form.to)}&depart=${encodeURIComponent(form.date || "")}${form.returnDate ? `&return=${encodeURIComponent(form.returnDate)}` : ""}`;
-  const bookingRedirect = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(form.to)}&checkin=${encodeURIComponent(form.date || "")}&checkout=${encodeURIComponent(form.returnDate || "")}&no_rooms=1&group_adults=${travelerCount}`;
+  const travelerCount = Math.max(
+    1,
+    (form.travelers || "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean).length || 1
+  );
+
+  const skyscannerRedirect = `https://www.skyscanner.co.in/transport/flights?from=${encodeURIComponent(
+    form.from
+  )}&to=${encodeURIComponent(form.to)}&depart=${encodeURIComponent(form.date || "")}${
+    form.returnDate ? `&return=${encodeURIComponent(form.returnDate)}` : ""
+  }`;
+
+  const bookingRedirect = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
+    form.to
+  )}&checkin=${encodeURIComponent(form.date || "")}&checkout=${encodeURIComponent(
+    form.returnDate || ""
+  )}&no_rooms=1&group_adults=${travelerCount}`;
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: "", returnDate: key === "date" ? "" : prev.returnDate }));
+  };
+
+  const resetTrip = () => {
+    setPhase("input");
+    setLogs([]);
+    setErrors({});
+    setPipelineStep(-1);
+    setSelectedFlight(null);
+    setSelectedHotel(null);
+    setClimate(null);
+    setPlan(null);
+    setFlights([]);
+    setHotels([]);
+  };
 
   const runOrchestrator = async () => {
     const validationErrors = validateForm(form);
     setErrors(validationErrors);
+
     if (Object.keys(validationErrors).length > 0) {
+      await addLog("orchestrator", "Validation failed. Please correct the highlighted fields.", 0);
       return;
     }
+
     setPhase("running");
     setLogs([]);
     setPipelineStep(0);
@@ -461,7 +697,13 @@ export default function TravelAgentOrchestrator() {
       const miscBudget = Math.round(budget * 0.2);
 
       await addLog("orchestrator", `Received ${isOneWay ? "one-way" : "round-trip"} request: ${form.from} → ${form.to}`, 300);
-      await addLog("orchestrator", isOneWay ? `Departure: ${formatDate(form.date)}` : `Dates: ${formatDate(form.date)} → ${formatDate(form.returnDate)} (${nights} nights)`, 300);
+      await addLog(
+        "orchestrator",
+        isOneWay
+          ? `Departure: ${formatDate(form.date)}`
+          : `Dates: ${formatDate(form.date)} → ${formatDate(form.returnDate)} (${nights} nights)`,
+        300
+      );
       await addLog("orchestrator", `Budget: ₹${budget.toLocaleString()} | Travelers: ${travelerCount}`, 300);
       await addLog("orchestrator", "Dispatching to Planning Agent...", 300);
 
@@ -479,7 +721,11 @@ export default function TravelAgentOrchestrator() {
         isOneWay,
       });
 
-      await addLog("planning", `Flights: ₹${flightBudget.toLocaleString()} | Hotels: ₹${hotelBudget.toLocaleString()} | Misc: ₹${miscBudget.toLocaleString()}`, 350);
+      await addLog(
+        "planning",
+        `Flights: ₹${flightBudget.toLocaleString()} | Hotels: ₹${hotelBudget.toLocaleString()} | Misc: ₹${miscBudget.toLocaleString()}`,
+        350
+      );
       await addLog("planning", "Travel plan built. Returning to Orchestrator.", 300);
 
       setPipelineStep(2);
@@ -491,11 +737,17 @@ export default function TravelAgentOrchestrator() {
       flightUrl.searchParams.set("destination", form.to);
       flightUrl.searchParams.set("departure_date", form.date);
       flightUrl.searchParams.set("adults", travelerCount.toString());
-      if (!isOneWay && form.returnDate) flightUrl.searchParams.set("return_date", form.returnDate);
+      if (!isOneWay && form.returnDate) {
+        flightUrl.searchParams.set("return_date", form.returnDate);
+      }
 
       const flightRes = await fetch(flightUrl.toString());
       const flightData = await flightRes.json();
-      if (!flightRes.ok) throw new Error(flightData.detail || "Flight API failed");
+
+      if (!flightRes.ok) {
+        throw new Error(flightData.detail || "Flight API failed");
+      }
+
       setFlights(flightData.flights || []);
       await addLog("flight", `Loaded ${flightData.flights?.length || 0} live flights from Skyscanner source`, 350);
 
@@ -509,7 +761,11 @@ export default function TravelAgentOrchestrator() {
 
         const hotelRes = await fetch(hotelUrl.toString());
         const hotelData = await hotelRes.json();
-        if (!hotelRes.ok) throw new Error(hotelData.detail || "Hotel API failed");
+
+        if (!hotelRes.ok) {
+          throw new Error(hotelData.detail || "Hotel API failed");
+        }
+
         setHotels(hotelData.hotels || []);
         await addLog("hotel", `Loaded ${hotelData.hotels?.length || 0} live hotels from Booking.com source`, 350);
       } else {
@@ -522,7 +778,11 @@ export default function TravelAgentOrchestrator() {
 
       const climateRes = await fetch(climateUrl.toString());
       const climateData = await climateRes.json();
-      if (!climateRes.ok) throw new Error(climateData.detail || "Climate API failed");
+
+      if (!climateRes.ok) {
+        throw new Error(climateData.detail || "Climate API failed");
+      }
+
       setClimate(climateData);
       await addLog("climate", `Weather loaded: ${climateData.condition}, ${climateData.temp}`, 350);
 
@@ -531,7 +791,7 @@ export default function TravelAgentOrchestrator() {
     } catch (err) {
       console.error("Live API error:", err);
       await addLog("orchestrator", `Error: ${err.message}`, 200);
-}
+      setPhase("results");
     }
   };
 
@@ -547,17 +807,23 @@ export default function TravelAgentOrchestrator() {
 
   const selectedFlightData = selectedFlight !== null ? flights[selectedFlight] : null;
   const selectedHotelData = selectedHotel !== null ? hotels[selectedHotel] : null;
+
   const estimatedTotal = selectedFlightData
-    ? Number(selectedFlightData.price || 0) + (form.tripType === "roundtrip" && selectedHotelData ? Number(selectedHotelData.price || 0) * nights : 0)
+    ? Number(selectedFlightData.price || 0) +
+      (form.tripType === "roundtrip" && selectedHotelData ? Number(selectedHotelData.price || 0) * nights : 0)
     : 0;
 
   return (
-    <div style={{
-      ...theme,
-      fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
-      background: "var(--bg)", color: "var(--text-primary)",
-      minHeight: "100vh", padding: 0,
-    }}>
+    <div
+      style={{
+        ...theme,
+        fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
+        background: "var(--bg)",
+        color: "var(--text-primary)",
+        minHeight: "100vh",
+        padding: 0,
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;0,9..40,800;1,9..40,400&family=Space+Mono:wght@400;700&display=swap');
         @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -568,27 +834,56 @@ export default function TravelAgentOrchestrator() {
         a:hover { opacity: 0.85; }
       `}</style>
 
-      <div style={{
-        background: "var(--card-bg)", borderBottom: "1px solid var(--border)",
-        padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
+      <div
+        style={{
+          background: "var(--card-bg)",
+          borderBottom: "1px solid var(--border)",
+          padding: "16px 24px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 10,
-            background: "linear-gradient(135deg, #6C5CE7, #00B894)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, color: "#fff", fontWeight: 800,
-          }}>◈</div>
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: "linear-gradient(135deg, #6C5CE7, #00B894)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 18,
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            ◈
+          </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em" }}>Travel Agent Orchestrator</div>
-            <div style={{ fontSize: 11, color: "var(--text-secondary)", fontFamily: "'Space Mono', monospace" }}>live APIs · deploy frontend + backend on Railway</div>
+            <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em" }}>
+              Travel Agent Orchestrator
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-secondary)", fontFamily: "'Space Mono', monospace" }}>
+              live APIs · deploy frontend + backend on Railway
+            </div>
           </div>
         </div>
-        <button onClick={() => setDarkMode(!darkMode)} style={{
-          background: "var(--input-bg)", border: "1px solid var(--border)",
-          borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer",
-          color: "var(--text-primary)", fontWeight: 600,
-        }}>
+
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          style={{
+            background: "var(--input-bg)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "6px 12px",
+            fontSize: 12,
+            cursor: "pointer",
+            color: "var(--text-primary)",
+            fontWeight: 600,
+          }}
+        >
           {darkMode ? "☀ Light" : "◑ Dark"}
         </button>
       </div>
@@ -597,34 +892,57 @@ export default function TravelAgentOrchestrator() {
         {phase === "input" && (
           <div style={{ animation: "fadeSlide 0.5s ease" }}>
             <div style={{ marginBottom: 24 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 6 }}>Plan your trip</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 6 }}>
+                Plan your trip
+              </h2>
               <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                 Enter your travel details and let the orchestrator fetch live flights, hotels, and weather.
               </p>
             </div>
 
-            <div style={{
-              background: "var(--card-bg)", border: "1px solid var(--border)",
-              borderRadius: 14, padding: 24,
-            }}>
+            <div
+              style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 24,
+              }}
+            >
               <div style={{ marginBottom: 20 }}>
-                <div style={{
-                  display: "inline-flex", borderRadius: 10, overflow: "hidden",
-                  border: "1px solid var(--border)", background: "var(--input-bg)",
-                }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    borderRadius: 10,
+                    overflow: "hidden",
+                    border: "1px solid var(--border)",
+                    background: "var(--input-bg)",
+                  }}
+                >
                   {[
                     { key: "oneway", label: "One way", icon: "→" },
                     { key: "roundtrip", label: "Round trip", icon: "⇄" },
                   ].map(({ key, label, icon }) => (
                     <button
                       key={key}
-                      onClick={() => setForm({ ...form, tripType: key, ...(key === "oneway" ? { returnDate: "" } : {}) })}
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          tripType: key,
+                          ...(key === "oneway" ? { returnDate: "" } : {}),
+                        }))
+                      }
                       style={{
-                        padding: "10px 20px", fontSize: 13, fontWeight: 700,
-                        cursor: "pointer", border: "none",
+                        padding: "10px 20px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        border: "none",
                         background: form.tripType === key ? "#6C5CE7" : "transparent",
                         color: form.tripType === key ? "#fff" : "var(--text-secondary)",
-                        transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6,
+                        transition: "all 0.2s",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                       }}
                     >
                       <span style={{ fontSize: 15 }}>{icon}</span> {label}
@@ -638,71 +956,127 @@ export default function TravelAgentOrchestrator() {
                   { key: "from", label: "From", placeholder: "Delhi", type: "text" },
                   { key: "to", label: "To", placeholder: "Paris", type: "text" },
                   { key: "date", label: "Departure date", placeholder: "", type: "date" },
-                  ...(form.tripType === "roundtrip" ? [{ key: "returnDate", label: "Return date", placeholder: "", type: "date" }] : []),
+                  ...(form.tripType === "roundtrip"
+                    ? [{ key: "returnDate", label: "Return date", placeholder: "", type: "date" }]
+                    : []),
                   { key: "budget", label: "Total budget (₹)", placeholder: "100000", type: "number" },
                   { key: "gender", label: "Gender", placeholder: "Male / Female / Mixed", type: "text" },
                 ].map(({ key, label, placeholder, type }) => (
                   <div key={key}>
-                    <label style={{
-                      fontSize: 11, fontWeight: 700, color: "var(--text-secondary)",
-                      textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, display: "block",
-                    }}>{label}</label>
+                    <label
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "var(--text-secondary)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        marginBottom: 6,
+                        display: "block",
+                      }}
+                    >
+                      {label}
+                    </label>
                     <input
-                      type={type} placeholder={placeholder}
+                      type={type}
+                      placeholder={placeholder}
                       value={form[key]}
-                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                      onChange={(e) => updateField(key, e.target.value)}
                       min={key === "returnDate" ? form.date : undefined}
                       style={{
-                        width: "100%", padding: "10px 12px", borderRadius: 8,
-                        border: "1px solid var(--border)", background: "var(--input-bg)",
-                        fontSize: 14, color: "var(--text-primary)", outline: "none",
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border)",
+                        background: "var(--input-bg)",
+                        fontSize: 14,
+                        color: "var(--text-primary)",
+                        outline: "none",
                       }}
                     />
+
+                    {errors[key] && (
+                      <div style={{ color: "#E17055", fontSize: 12, marginTop: 4 }}>{errors[key]}</div>
+                    )}
                   </div>
                 ))}
               </div>
 
               <div style={{ marginTop: 16 }}>
-                <label style={{
-                  fontSize: 11, fontWeight: 700, color: "var(--text-secondary)",
-                  textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, display: "block",
-                }}>Travelers (comma separated)</label>
-                <input
-                  type="text" placeholder="Manaswi, Priya, Rahul"
-                  value={form.travelers}
-                  onChange={(e) => setForm({ ...form, travelers: e.target.value })}
+                <label
                   style={{
-                    width: "100%", padding: "10px 12px", borderRadius: 8,
-                    border: "1px solid var(--border)", background: "var(--input-bg)",
-                    fontSize: 14, color: "var(--text-primary)", outline: "none",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text-secondary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    marginBottom: 6,
+                    display: "block",
+                  }}
+                >
+                  Travelers (comma separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Manaswi, Priya, Rahul"
+                  value={form.travelers}
+                  onChange={(e) => updateField("travelers", e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: "var(--input-bg)",
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                    outline: "none",
                   }}
                 />
+                {errors.travelers && (
+                  <div style={{ color: "#E17055", fontSize: 12, marginTop: 4 }}>{errors.travelers}</div>
+                )}
               </div>
 
               {form.tripType === "roundtrip" && nights > 0 && (
-                <div style={{
-                  marginTop: 12, padding: "10px 14px", background: "#6C5CE710",
-                  border: "1px solid #6C5CE725", borderRadius: 8,
-                  display: "flex", justifyContent: "center", alignItems: "center", gap: 12,
-                  fontSize: 13, fontWeight: 600, color: "#6C5CE7", flexWrap: "wrap",
-                }}>
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "10px 14px",
+                    background: "#6C5CE710",
+                    border: "1px solid #6C5CE725",
+                    borderRadius: 8,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 12,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#6C5CE7",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <span>{nights} nights</span>
                   <span style={{ color: "var(--border)" }}>·</span>
                   <span>{nights + 1} days</span>
                   <span style={{ color: "var(--border)" }}>·</span>
-                  <span>{formatDate(form.date)} → {formatDate(form.returnDate)}</span>
+                  <span>
+                    {formatDate(form.date)} → {formatDate(form.returnDate)}
+                  </span>
                 </div>
               )}
 
               <button
                 onClick={runOrchestrator}
-                disabled={!form.from || !form.to || !form.date || (form.tripType === "roundtrip" && (!form.returnDate || nights <= 0))}
                 style={{
-                  width: "100%", marginTop: 24, padding: "14px",
-                  background: (!form.from || !form.to || !form.date || (form.tripType === "roundtrip" && (!form.returnDate || nights <= 0))) ? "#ccc" : "linear-gradient(135deg, #6C5CE7, #00B894)",
-                  color: "#fff", border: "none", borderRadius: 10,
-                  fontSize: 15, fontWeight: 700,
-                  cursor: (!form.from || !form.to || !form.date || (form.tripType === "roundtrip" && (!form.returnDate || nights <= 0))) ? "default" : "pointer",
+                  width: "100%",
+                  marginTop: 24,
+                  padding: "14px",
+                  background: "linear-gradient(135deg, #6C5CE7, #00B894)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
                   letterSpacing: "0.02em",
                 }}
               >
@@ -718,12 +1092,21 @@ export default function TravelAgentOrchestrator() {
               <h2 style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em" }}>
                 {phase === "running" ? "Agents working..." : "Trip results"}
               </h2>
+
               {phase === "results" && (
-                <button onClick={() => { setPhase("input"); setLogs([]); setPipelineStep(-1); setSelectedFlight(null); setSelectedHotel(null); setClimate(null); setPlan(null); setFlights([]); setHotels([]); }} style={{
-                  padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                  cursor: "pointer", border: "1px solid var(--border)",
-                  background: "var(--input-bg)", color: "var(--text-primary)",
-                }}>
+                <button
+                  onClick={resetTrip}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid var(--border)",
+                    background: "var(--input-bg)",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   New trip
                 </button>
               )}
@@ -731,51 +1114,129 @@ export default function TravelAgentOrchestrator() {
 
             <PipelineStatus steps={pipelineSteps} current={pipelineStep} />
 
-            <div style={{
-              background: "var(--card-bg)", border: "1px solid var(--border)",
-              borderRadius: 14, padding: 16, marginBottom: 20,
-              maxHeight: 340, overflowY: "auto",
-            }}>
-              <div style={{
-                fontSize: 11, fontWeight: 700, color: "var(--text-secondary)",
-                textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8,
-                fontFamily: "'Space Mono', monospace",
-              }}>Agent log</div>
+            <div
+              style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 16,
+                marginBottom: 20,
+                maxHeight: 340,
+                overflowY: "auto",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--text-secondary)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: 8,
+                  fontFamily: "'Space Mono', monospace",
+                }}
+              >
+                Agent log
+              </div>
+
               {logs.map((log, i) => (
                 <LogEntry key={i} agent={log.agent} message={log.message} timestamp={log.timestamp} />
               ))}
+
               {phase === "running" && (
                 <div style={{ textAlign: "center", padding: 16 }}>
-                  <div style={{
-                    width: 24, height: 24, border: "3px solid var(--border)",
-                    borderTopColor: "#6C5CE7", borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite", margin: "0 auto",
-                  }} />
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      border: "3px solid var(--border)",
+                      borderTopColor: "#6C5CE7",
+                      borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite",
+                      margin: "0 auto",
+                    }}
+                  />
                 </div>
               )}
+
               <div ref={logsEndRef} />
             </div>
 
             {phase === "results" && (
               <>
-                {form.tripType === "roundtrip" && (
-                  <ItineraryCard form={form} nights={nights} climate={climate} />
-                )}
+                {form.tripType === "roundtrip" && <ItineraryCard form={form} nights={nights} climate={climate} />}
 
                 {plan && (
-                  <div style={{
-                    background: "var(--card-bg)", border: "1px solid var(--border)",
-                    borderRadius: 14, padding: 20, marginBottom: 20,
-                  }}>
+                  <div
+                    style={{
+                      background: "var(--card-bg)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 20,
+                      marginBottom: 20,
+                    }}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                       <AgentBadge agent="planning" />
                       <span style={{ fontSize: 14, fontWeight: 700 }}>Budget allocation</span>
                     </div>
-                    <div style={{ display: "flex", gap: 4, height: 28, borderRadius: 8, overflow: "hidden", marginBottom: 12 }}>
-                      <div style={{ flex: plan.isOneWay ? 60 : 45, background: "#0984E3", borderRadius: "8px 0 0 8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700 }}>Flights {plan.isOneWay ? "60" : "45"}%</div>
-                      <div style={{ flex: plan.isOneWay ? 20 : 35, background: "#E17055", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700 }}>Hotels {plan.isOneWay ? "20" : "35"}%</div>
-                      <div style={{ flex: 20, background: "#00B894", borderRadius: "0 8px 8px 0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700 }}>Misc 20%</div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 4,
+                        height: 28,
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        marginBottom: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          flex: plan.isOneWay ? 60 : 45,
+                          background: "#0984E3",
+                          borderRadius: "8px 0 0 8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          color: "#fff",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Flights {plan.isOneWay ? "60" : "45"}%
+                      </div>
+                      <div
+                        style={{
+                          flex: plan.isOneWay ? 20 : 35,
+                          background: "#E17055",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          color: "#fff",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Hotels {plan.isOneWay ? "20" : "35"}%
+                      </div>
+                      <div
+                        style={{
+                          flex: 20,
+                          background: "#00B894",
+                          borderRadius: "0 8px 8px 0",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          color: "#fff",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Misc 20%
+                      </div>
                     </div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, fontSize: 13 }}>
                       <div style={{ textAlign: "center" }}>
                         <div style={{ fontWeight: 800, color: "#0984E3" }}>₹{plan.flightBudget.toLocaleString()}</div>
@@ -783,7 +1244,9 @@ export default function TravelAgentOrchestrator() {
                       </div>
                       <div style={{ textAlign: "center" }}>
                         <div style={{ fontWeight: 800, color: "#E17055" }}>₹{plan.hotelBudget.toLocaleString()}</div>
-                        <div style={{ fontSize: 10, color: "#888" }}>{plan.isOneWay ? "Hotels later" : `Hotels (${nights} nights)`}</div>
+                        <div style={{ fontSize: 10, color: "#888" }}>
+                          {plan.isOneWay ? "Hotels later" : `Hotels (${nights} nights)`}
+                        </div>
                       </div>
                       <div style={{ textAlign: "center" }}>
                         <div style={{ fontWeight: 800, color: "#00B894" }}>₹{plan.miscBudget.toLocaleString()}</div>
@@ -793,47 +1256,100 @@ export default function TravelAgentOrchestrator() {
                   </div>
                 )}
 
-                <div style={{
-                  background: "var(--card-bg)", border: "1px solid var(--border)",
-                  borderRadius: 14, padding: 20, marginBottom: 20,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                <div
+                  style={{
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 14,
+                    padding: 20,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 16,
+                      flexWrap: "wrap",
+                      gap: 8,
+                    }}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <AgentBadge agent="flight" />
                       <span style={{ fontSize: 14, fontWeight: 700 }}>Available flights</span>
                     </div>
                     <BookButton href={skyscannerRedirect} label="Open Skyscanner" color="#0984E3" />
                   </div>
+
                   {flights.length === 0 ? (
                     <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>No flights returned.</div>
-                  ) : flights.map((f, i) => (
-                    <FlightCard key={i} flight={f} selected={selectedFlight === i} onSelect={() => setSelectedFlight(i)} redirectUrl={skyscannerRedirect} />
-                  ))}
+                  ) : (
+                    flights.map((f, i) => (
+                      <FlightCard
+                        key={i}
+                        flight={f}
+                        selected={selectedFlight === i}
+                        onSelect={() => setSelectedFlight(i)}
+                        redirectUrl={skyscannerRedirect}
+                      />
+                    ))
+                  )}
                 </div>
 
                 {form.tripType === "roundtrip" ? (
-                  <div style={{
-                    background: "var(--card-bg)", border: "1px solid var(--border)",
-                    borderRadius: 14, padding: 20, marginBottom: 20,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                  <div
+                    style={{
+                      background: "var(--card-bg)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 20,
+                      marginBottom: 20,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 16,
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <AgentBadge agent="hotel" />
                         <span style={{ fontSize: 14, fontWeight: 700 }}>Available hotels</span>
                       </div>
                       <BookButton href={bookingRedirect} label="Open Booking.com" color="#E17055" />
                     </div>
+
                     {hotels.length === 0 ? (
                       <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>No hotels returned.</div>
-                    ) : hotels.map((h, i) => (
-                      <HotelCard key={i} hotel={h} selected={selectedHotel === i} onSelect={() => setSelectedHotel(i)} redirectUrl={bookingRedirect} nights={nights} />
-                    ))}
+                    ) : (
+                      hotels.map((h, i) => (
+                        <HotelCard
+                          key={i}
+                          hotel={h}
+                          selected={selectedHotel === i}
+                          onSelect={() => setSelectedHotel(i)}
+                          redirectUrl={bookingRedirect}
+                          nights={nights}
+                        />
+                      ))
+                    )}
                   </div>
                 ) : (
-                  <div style={{
-                    background: "var(--card-bg)", border: "1px solid var(--border)",
-                    borderRadius: 14, padding: 20, marginBottom: 20, textAlign: "center",
-                  }}>
+                  <div
+                    style={{
+                      background: "var(--card-bg)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 20,
+                      marginBottom: 20,
+                      textAlign: "center",
+                    }}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                       <AgentBadge agent="hotel" />
                       <span style={{ fontSize: 14, fontWeight: 700 }}>Hotels</span>
@@ -846,10 +1362,15 @@ export default function TravelAgentOrchestrator() {
                 )}
 
                 {climate && (
-                  <div style={{
-                    background: "var(--card-bg)", border: "1px solid var(--border)",
-                    borderRadius: 14, padding: 20, marginBottom: 20,
-                  }}>
+                  <div
+                    style={{
+                      background: "var(--card-bg)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 20,
+                      marginBottom: 20,
+                    }}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                       <AgentBadge agent="climate" />
                       <span style={{ fontSize: 14, fontWeight: 700 }}>Weather forecast</span>
@@ -859,47 +1380,97 @@ export default function TravelAgentOrchestrator() {
                 )}
 
                 {selectedFlightData && (form.tripType === "oneway" || selectedHotelData) && (
-                  <div style={{
-                    background: "linear-gradient(135deg, #6C5CE720, #00B89420)",
-                    border: "2px solid #6C5CE750", borderRadius: 14, padding: 24,
-                    animation: "fadeSlide 0.5s ease", marginBottom: 20,
-                  }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div
+                    style={{
+                      background: "linear-gradient(135deg, #6C5CE720, #00B89420)",
+                      border: "2px solid #6C5CE750",
+                      borderRadius: 14,
+                      padding: 24,
+                      animation: "fadeSlide 0.5s ease",
+                      marginBottom: 20,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 800,
+                        marginBottom: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
                       <span style={{ fontSize: 20 }}>◈</span> Trip summary
                     </div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, fontSize: 13 }}>
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Route</div>
+                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                          Route
+                        </div>
                         <div style={{ fontWeight: 700 }}>{form.from} → {form.to}</div>
                       </div>
+
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Trip type</div>
-                        <div style={{ fontWeight: 700 }}>{form.tripType === "oneway" ? "One way" : `${nights} nights · ${nights + 1} days`}</div>
+                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                          Trip type
+                        </div>
+                        <div style={{ fontWeight: 700 }}>
+                          {form.tripType === "oneway" ? "One way" : `${nights} nights · ${nights + 1} days`}
+                        </div>
                       </div>
+
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Dates</div>
-                        <div style={{ fontWeight: 700 }}>{form.tripType === "oneway" ? formatDate(form.date) : `${formatDate(form.date)} → ${formatDate(form.returnDate)}`}</div>
+                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                          Dates
+                        </div>
+                        <div style={{ fontWeight: 700 }}>
+                          {form.tripType === "oneway"
+                            ? formatDate(form.date)
+                            : `${formatDate(form.date)} → ${formatDate(form.returnDate)}`}
+                        </div>
                       </div>
+
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Travelers</div>
+                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                          Travelers
+                        </div>
                         <div style={{ fontWeight: 700 }}>{form.travelers || "1 traveler"}</div>
                       </div>
+
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Flight</div>
-                        <div style={{ fontWeight: 700, color: "#0984E3" }}>{selectedFlightData.airline} · {selectedFlightData.formattedPrice || `₹${Number(selectedFlightData.price || 0).toLocaleString()}`}</div>
+                        <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                          Flight
+                        </div>
+                        <div style={{ fontWeight: 700, color: "#0984E3" }}>
+                          {selectedFlightData.airline} ·{" "}
+                          {selectedFlightData.formattedPrice || `₹${Number(selectedFlightData.price || 0).toLocaleString()}`}
+                        </div>
                       </div>
+
                       {form.tripType === "roundtrip" && selectedHotelData && (
                         <div>
-                          <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Hotel</div>
-                          <div style={{ fontWeight: 700, color: "#E17055" }}>{selectedHotelData.name} · {selectedHotelData.formattedPrice || `${selectedHotelData.currency || "INR"} ${Number(selectedHotelData.price || 0).toLocaleString()}`}</div>
+                          <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                            Hotel
+                          </div>
+                          <div style={{ fontWeight: 700, color: "#E17055" }}>
+                            {selectedHotelData.name} ·{" "}
+                            {selectedHotelData.formattedPrice ||
+                              `${selectedHotelData.currency || "INR"} ${Number(selectedHotelData.price || 0).toLocaleString()}`}
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    <div style={{
-                      marginTop: 16, padding: "14px", background: "#00B89420",
-                      borderRadius: 8, textAlign: "center",
-                    }}>
+                    <div
+                      style={{
+                        marginTop: 16,
+                        padding: "14px",
+                        background: "#00B89420",
+                        borderRadius: 8,
+                        textAlign: "center",
+                      }}
+                    >
                       <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>Estimated total</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: "#00B894" }}>
                         ₹{estimatedTotal.toLocaleString()}
