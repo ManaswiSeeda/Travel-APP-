@@ -125,7 +125,7 @@ function BookButton({ href, label, color }) {
 function FlightCard({ flight, selected, onSelect, redirectUrl }) {
   const dep = flight.dep ? new Date(flight.dep).toLocaleString() : "N/A";
   const arr = flight.arr ? new Date(flight.arr).toLocaleString() : "N/A";
-  const displayPrice = flight.formattedPrice || `₹${Number(flight.price || 0).toLocaleString()}`;
+  const displayPrice = flight.formattedPrice || `$${Number(flight.price || 0).toLocaleString()}`;
 
   return (
     <div
@@ -177,7 +177,7 @@ function FlightCard({ flight, selected, onSelect, redirectUrl }) {
 
 function HotelCard({ hotel, selected, onSelect, redirectUrl, nights }) {
   const priceValue = Number(hotel.price || 0);
-  const displayPrice = hotel.formattedPrice || `${hotel.currency || "INR"} ${priceValue.toLocaleString()}`;
+  const displayPrice = hotel.formattedPrice || `${hotel.currency || "USD"} ${priceValue.toLocaleString()}`;
   const amenities = hotel.amenities || [];
 
   return (
@@ -236,7 +236,7 @@ function HotelCard({ hotel, selected, onSelect, redirectUrl, nights }) {
             </div>
             <div style={{ fontSize: 10, color: "#888" }}>
               per night
-              {nights > 0 ? ` · ${hotel.currency || "INR"} ${(priceValue * nights).toLocaleString()} total` : ""}
+              {nights > 0 ? ` · ${hotel.currency || "USD"} ${(priceValue * nights).toLocaleString()} total` : ""}
             </div>
           </div>
           {selected && <BookButton href={redirectUrl} label="Continue to Booking.com" color="#E17055" />}
@@ -700,7 +700,7 @@ export default function TravelAgentOrchestrator() {
           : `Dates: ${formatDate(form.date)} → ${formatDate(form.returnDate)} (${nights} nights)`,
         300
       );
-      await addLog("orchestrator", `Budget: ₹${budget.toLocaleString()} | Travelers: ${travelerCount}`, 300);
+      await addLog("orchestrator", `Budget: $${budget.toLocaleString()} | Travelers: ${travelerCount}`, 300);
       await addLog("orchestrator", "Dispatching to Planning Agent...", 300);
 
       setPipelineStep(1);
@@ -719,7 +719,7 @@ export default function TravelAgentOrchestrator() {
 
       await addLog(
         "planning",
-        `Flights: ₹${flightBudget.toLocaleString()} | Hotels: ₹${hotelBudget.toLocaleString()} | Misc: ₹${miscBudget.toLocaleString()}`,
+        `Flights: $${flightBudget.toLocaleString()} | Hotels: $${hotelBudget.toLocaleString()} | Misc: $${miscBudget.toLocaleString()}`,
         350
       );
       await addLog("planning", "Travel plan built. Returning to Orchestrator.", 300);
@@ -955,7 +955,7 @@ export default function TravelAgentOrchestrator() {
                   ...(form.tripType === "roundtrip"
                     ? [{ key: "returnDate", label: "Return date", placeholder: "", type: "date" }]
                     : []),
-                  { key: "budget", label: "Total budget (₹)", placeholder: "100000", type: "number" },
+                  { key: "budget", label: "Total budget ($)", placeholder: "100000", type: "number" },
                   { key: "gender", label: "Gender", placeholder: "Male / Female / Mixed", type: "text" },
                 ].map(({ key, label, placeholder, type }) => (
                   <div key={key}>
@@ -1235,17 +1235,17 @@ export default function TravelAgentOrchestrator() {
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, fontSize: 13 }}>
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ fontWeight: 800, color: "#0984E3" }}>₹{plan.flightBudget.toLocaleString()}</div>
+                        <div style={{ fontWeight: 800, color: "#0984E3" }}>${plan.flightBudget.toLocaleString()}</div>
                         <div style={{ fontSize: 10, color: "#888" }}>Flight{plan.isOneWay ? "" : "s"}</div>
                       </div>
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ fontWeight: 800, color: "#E17055" }}>₹{plan.hotelBudget.toLocaleString()}</div>
+                        <div style={{ fontWeight: 800, color: "#E17055" }}>${plan.hotelBudget.toLocaleString()}</div>
                         <div style={{ fontSize: 10, color: "#888" }}>
                           {plan.isOneWay ? "Hotels later" : `Hotels (${nights} nights)`}
                         </div>
                       </div>
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ fontWeight: 800, color: "#00B894" }}>₹{plan.miscBudget.toLocaleString()}</div>
+                        <div style={{ fontWeight: 800, color: "#00B894" }}>${plan.miscBudget.toLocaleString()}</div>
                         <div style={{ fontSize: 10, color: "#888" }}>Misc / Activities</div>
                       </div>
                     </div>
@@ -1440,7 +1440,7 @@ export default function TravelAgentOrchestrator() {
                         </div>
                         <div style={{ fontWeight: 700, color: "#0984E3" }}>
                           {selectedFlightData.airline} ·{" "}
-                          {selectedFlightData.formattedPrice || `₹${Number(selectedFlightData.price || 0).toLocaleString()}`}
+                          {selectedFlightData.formattedPrice || `$${Number(selectedFlightData.price || 0).toLocaleString()}`}
                         </div>
                       </div>
 
@@ -1452,7 +1452,7 @@ export default function TravelAgentOrchestrator() {
                           <div style={{ fontWeight: 700, color: "#E17055" }}>
                             {selectedHotelData.name} ·{" "}
                             {selectedHotelData.formattedPrice ||
-                              `${selectedHotelData.currency || "INR"} ${Number(selectedHotelData.price || 0).toLocaleString()}`}
+                              `${selectedHotelData.currency || "USD"} ${Number(selectedHotelData.price || 0).toLocaleString()}`}
                           </div>
                         </div>
                       )}
@@ -1469,7 +1469,7 @@ export default function TravelAgentOrchestrator() {
                     >
                       <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>Estimated total</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: "#00B894" }}>
-                        ₹{estimatedTotal.toLocaleString()}
+                        ${estimatedTotal.toLocaleString()}
                       </div>
                     </div>
 
