@@ -287,7 +287,8 @@ async def search_flights(
         return {
            "flights": flights,
            "source": "google_flights",
-           "airport_lookup": {
+            "provider_name": "Google Flights",
+            "airport_lookup": {
                "origin": departure_id,
                "destination": arrival_id,
            },
@@ -394,45 +395,98 @@ async def search_hotels(
 
 
 @app.get("/api/climate")
-async def climate(city: str = Query(...)):
+async def climate(city: str = Query(...), lang: str = Query("EN")):
     if not city or not city.strip():
         raise HTTPException(status_code=400, detail="City is required")
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        weather_url = f"https://{WEATHER_HOST}/weather"
-        weather_params = {
+    async with httpx.AsyncClient(timeout=30, headers={"User-Agent": "travel-agent-orchestrator/1.0"}) as client:
+        # Step 1: city -> coordinates using Nominatim (no API key)
+        geo_url = "https://nominatim.openstreetmap.org/search"
+        geo_params = {
             "q": city,
-            "units": "metric",
+            "format": "jsonv2",
+            "limit": 1,
         }
 
-        debug_log("WEATHER SEARCH", weather_url, weather_params)
+        print("\n===== API DEBUG =====")
+        print("LABEL: WEATHER GEOCODING")
+        print("URL:", geo_url)
+        print("PARAMS:", geo_params)
+        print("=====================\n")
 
-        current_res = await client.get(
+        geo_res = await client.get(geo_url, params=geo_params)
+        if geo_res.status_code != 200:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Weather geocoding failed: {geo_res.text}",
+            )
+
+        geo_data = geo_res.json()
+        if not geo_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Could not find coordinates for city: {city}",
+            )
+
+        lat = geo_data[0].get("lat")
+        lon = geo_data[0].get("lon")
+
+        if lat is None or lon is None:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Coordinates missing for city: {city}",
+            )
+
+        # Step 2: call your RapidAPI weather provider with supported path
+        weather_url = f"https://{WEATHER_HOST}/fivedaysforcast"
+        weather_params = {
+            "latitude": lat,
+            "longitude": lon,
+            "lang": lang,
+        }
+
+        print("\n===== API DEBUG =====")
+        print("LABEL: WEATHER FORECAST")
+        print("URL:", weather_url)
+        print("PARAMS:", weather_params)
+        print("=====================\n")
+
+        weather_res = await client.get(
             weather_url,
             params=weather_params,
             headers=rapid_headers(WEATHER_HOST),
         )
 
-        if current_res.status_code != 200:
+        if weather_res.status_code != 200:
             raise HTTPException(
                 status_code=500,
-                detail=f"Weather lookup failed: {current_res.text}",
+                detail=f"Weather lookup failed: {weather_res.text}",
             )
 
-        data = current_res.json()
-        main = data.get("main", {})
-        weather_list = data.get("weather", [])
-        wind = data.get("wind", {})
+        data = weather_res.json()
+
+        # Forecast-style response: use first forecast item
+        forecast_list = data.get("list", []) if isinstance(data, dict) else []
+        first_item = forecast_list[0] if forecast_list else {}
+
+        main = first_item.get("main", {})
+        weather_list = first_item.get("weather", [])
+        wind = first_item.get("wind", {})
         weather_text = weather_list[0].get("description", "") if weather_list else ""
 
+        rain_value = "N/A"
+        rain_obj = first_item.get("rain", {})
+        if isinstance(rain_obj, dict):
+            rain_value = rain_obj.get("3h", "N/A")
+
         return {
-            "temp": f"{round(main.get('temp', 0))}°C",
-            "humidity": f"{main.get('humidity', 0)}%",
+            "temp": f"{round(main.get('temp', 0))}°C" if main.get("temp") is not None else "N/A",
+            "humidity": f"{main.get('humidity', 0)}%" if main.get("humidity") is not None else "N/A",
             "condition": weather_text or "N/A",
             "windSpeed": wind.get("speed", 0),
-            "rain": "N/A",
+            "rain": rain_value,
             "advisory": "Carry umbrella" if "rain" in weather_text.lower() else "Weather looks manageable",
             "raw": data,
         }
