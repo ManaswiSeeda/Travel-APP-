@@ -205,7 +205,7 @@ function SuggestionInput({
               }}
             >
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                {item.label}
+                {item.display_name || item.input_value || item.name || item.city || "Unknown"}
               </div>
               {item.subtitle && (
                 <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
@@ -764,51 +764,24 @@ export default function TravelAgentOrchestrator() {
     setErrors((prev) => ({ ...prev, [key]: "", returnDate: key === "date" ? "" : prev.returnDate }));
   };
 
-  const fetchAirportSuggestions = async (query, field) => {
-    const value = query.trim();
+  const selectSuggestion = (field, suggestion) => {
+  const finalValue =
+    suggestion.input_value ||
+    suggestion.city ||
+    suggestion.name ||
+    suggestion.display_name ||
+    "";
 
-    if (value.length < 2) {
-      if (field === "from") {
-        setFromSuggestions([]);
-        setShowFromSuggestions(false);
-      } else {
-        setToSuggestions([]);
-        setShowToSuggestions(false);
-      }
-      return;
-    }
+  updateField(field, finalValue.trim());
 
-    try {
-      const url = new URL("/api/airport-suggestions", `${API_BASE}/`);
-      url.searchParams.set("q", value);
-
-      const res = await fetch(url.toString());
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || "Suggestion lookup failed");
-      }
-
-      const suggestions = data.suggestions || [];
-
-      if (field === "from") {
-        setFromSuggestions(suggestions);
-        setShowFromSuggestions(true);
-      } else {
-        setToSuggestions(suggestions);
-        setShowToSuggestions(true);
-      }
-    } catch (err) {
-      console.error(`${field} suggestions error:`, err);
-      if (field === "from") {
-        setFromSuggestions([]);
-        setShowFromSuggestions(false);
-      } else {
-        setToSuggestions([]);
-        setShowToSuggestions(false);
-      }
-    }
-  };
+  if (field === "from") {
+    setFromSuggestions([]);
+    setShowFromSuggestions(false);
+  } else {
+    setToSuggestions([]);
+    setShowToSuggestions(false);
+  }
+};
 
   const handleAirportInputChange = (field, value) => {
     updateField(field, value);
@@ -829,16 +802,23 @@ export default function TravelAgentOrchestrator() {
   };
 
   const selectSuggestion = (field, suggestion) => {
-    updateField(field, suggestion.title || suggestion.label || "");
+  const finalValue =
+    suggestion.input_value ||
+    suggestion.city ||
+    suggestion.name ||
+    suggestion.display_name ||
+    "";
 
-    if (field === "from") {
-      setFromSuggestions([]);
-      setShowFromSuggestions(false);
-    } else {
-      setToSuggestions([]);
-      setShowToSuggestions(false);
-    }
-  };
+  updateField(field, finalValue.trim());
+
+  if (field === "from") {
+    setFromSuggestions([]);
+    setShowFromSuggestions(false);
+  } else {
+    setToSuggestions([]);
+    setShowToSuggestions(false);
+  }
+};
 
   const resetTrip = () => {
     setPhase("input");
