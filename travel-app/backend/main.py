@@ -284,8 +284,7 @@ async def search_flights(
                 "formattedPrice": f"USD {price}" if price else "",
                 "raw": item,
             })
-
-       return {
+        return {
            "flights": flights,
            "source": "google_flights",
            "airport_lookup": {
