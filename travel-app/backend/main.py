@@ -52,13 +52,13 @@ def debug_log(label: str, url: str, params: dict | None = None):
 def map_travel_class(cabin_class: str) -> str:
     value = (cabin_class or "").strip().lower()
     mapping = {
-        "economy": "1",
-        "premium economy": "2",
-        "premium_economy": "2",
-        "business": "3",
-        "first": "4",
+        "economy": "ECONOMY",
+        "premium economy": "PREMIUM_ECONOMY",
+        "premium_economy": "PREMIUM_ECONOMY",
+        "business": "BUSINESS",
+        "first": "FIRST",
     }
-    return mapping.get(value, "1")
+    return mapping.get(value, "ECONOMY")
 
 
 class TripValidation(BaseModel):
