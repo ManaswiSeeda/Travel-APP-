@@ -120,17 +120,16 @@ TripValidation(
     stops="any",
     budget=1000
 )
-    if not RAPIDAPI_KEY:
-        raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
-
-    async with httpx.AsyncClient(timeout=40) as client:
-        origin_res = await client.get(
-            f"https://{SKY_HOST}/api/v1/flights/searchAirport",
-            params={"query": origin},
-            headers=rapid_headers(SKY_HOST),
-        )
-        if origin_res.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Origin airport lookup failed: {origin_res.text}")
+if not RAPIDAPI_KEY:
+    raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
+async with httpx.AsyncClient(timeout=40) as client:
+    origin_res = await client.get(
+        f"https://{SKY_HOST}/api/v1/flights/searchAirport",
+        params={"query": origin},
+        headers=rapid_headers(SKY_HOST),
+    )
+    if origin_res.status_code != 200:
+        raise HTTPException(status_code=500, detail=f"Origin airport lookup failed: {origin_res.text}")
 
         dest_res = await client.get(
             f"https://{SKY_HOST}/api/v1/flights/searchAirport",
