@@ -194,7 +194,6 @@ async def search_flights(
         if not dest_data:
             raise HTTPException(status_code=404, detail=f"No airport found for destination: {destination}")
 
-        # usually this endpoint returns airport/code data; prefer "id", then fallback fields
         origin_item = origin_data[0]
         dest_item = dest_data[0]
 
@@ -255,38 +254,94 @@ async def search_flights(
         print("====================================")
 
         all_flights = []
+
         if isinstance(raw, dict):
             data = raw.get("data")
-            
+
             if isinstance(data, dict):
                 all_flights = (
                     data.get("best_flights", [])
                     or data.get("other_flights", [])
                     or data.get("flights", [])
                     or data.get("results", [])
-                    or data.get("itineraries", []))
+                    or data.get("itineraries", [])
+                )
             elif isinstance(data, list):
                 all_flights = data
+
         if not all_flights:
             all_flights = (
                 raw.get("flights", [])
                 or raw.get("results", [])
-                or raw.get("itineraries", []))
-         print("PARSED FLIGHTS COUNT:", len(all_flights))
+                or raw.get("itineraries", [])
+            )
+
+        print("PARSED FLIGHTS COUNT:", len(all_flights))
 
         flights = []
         for item in all_flights[:10]:
-            flights_list = item.get("flights", [])
+            flights_list = (
+                item.get("flights", [])
+                or item.get("legs", [])
+                or item.get("segments", [])
+            )
+
             first_leg = flights_list[0] if flights_list else {}
             last_leg = flights_list[-1] if flights_list else {}
 
-            airline_name = first_leg.get("airline") or first_leg.get("name") or "Unknown Airline"
-            dep = first_leg.get("departure_airport", {}).get("time") or item.get("departure", "")
-            arr = last_leg.get("arrival_airport", {}).get("time") or item.get("arrival", "")
-            stops_count = max(len(flights_list) - 1, 0)
+            airline_name = (
+                first_leg.get("airline")
+                or first_leg.get("name")
+                or first_leg.get("carrier")
+                or item.get("airline")
+                or "Unknown Airline"
+            )
 
-            duration_mins = item.get("total_duration", 0)
-            price = item.get("price", 0)
+            dep = (
+                first_leg.get("departure_airport", {}).get("time")
+                or first_leg.get("departure")
+                or first_leg.get("dep")
+                or item.get("departure")
+                or item.get("dep")
+                or ""
+            )
+
+            arr = (
+                last_leg.get("arrival_airport", {}).get("time")
+                or last_leg.get("arrival")
+                or last_leg.get("arr")
+                or item.get("arrival")
+                or item.get("arr")
+                or ""
+            )
+
+            if flights_list:
+                stops_count = max(len(flights_list) - 1, 0)
+            else:
+                stops_count = item.get("stops", 0) or item.get("stop_count", 0) or 0
+
+            duration_mins = (
+                item.get("total_duration")
+                or item.get("duration")
+                or item.get("durationInMinutes")
+                or 0
+            )
+
+            price = (
+                item.get("price")
+                or item.get("amount")
+                or item.get("raw_price")
+                or 0
+            )
+
+            if isinstance(price, dict):
+                price = price.get("raw") or price.get("value") or 0
+
+            if not isinstance(duration_mins, int):
+                try:
+                    duration_mins = int(duration_mins)
+                except Exception:
+                    duration_mins = 0
 
             flights.append({
                 "airline": airline_name,
@@ -299,15 +354,17 @@ async def search_flights(
                 "formattedPrice": f"USD {price}" if price else "",
                 "raw": item,
             })
+
         return {
-           "flights": flights,
-           "source": "google_flights",
+            "flights": flights,
+            "source": "google_flights",
             "provider_name": "Google Flights",
             "airport_lookup": {
-               "origin": departure_id,
-               "destination": arrival_id,
-           },
-       }
+                "origin": departure_id,
+                "destination": arrival_id,
+            },
+        }
+
 
 @app.get("/api/hotels")
 async def search_hotels(
@@ -416,8 +473,10 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
-    async with httpx.AsyncClient(timeout=30, headers={"User-Agent": "travel-agent-orchestrator/1.0"}) as client:
-        # Step 1: city -> coordinates using Nominatim (no API key)
+    async with httpx.AsyncClient(
+        timeout=30,
+        headers={"User-Agent": "travel-agent-orchestrator/1.0"}
+    ) as client:
         geo_url = "https://nominatim.openstreetmap.org/search"
         geo_params = {
             "q": city,
@@ -454,7 +513,6 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
                 detail=f"Coordinates missing for city: {city}",
             )
 
-        # Step 2: call your RapidAPI weather provider with supported path
         weather_url = f"https://{WEATHER_HOST}/fivedaysforcast"
         weather_params = {
             "latitude": lat,
@@ -482,7 +540,6 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
 
         data = weather_res.json()
 
-        # Forecast-style response: use first forecast item
         forecast_list = data.get("list", []) if isinstance(data, dict) else []
         first_item = forecast_list[0] if forecast_list else {}
 
