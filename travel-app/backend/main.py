@@ -18,8 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
-SKY_HOST = os.getenv("SKY_HOST", " skyscanner-flights-travel-api.p.rapidapi.com")
+SKY_HOST = os.getenv("SKY_HOST", "skyscanner-flights-travel-api.p.rapidapi.com")
 BOOKING_HOST = os.getenv("BOOKING_HOST", "booking-com15.p.rapidapi.com")
 WEATHER_HOST = os.getenv("WEATHER_HOST", "open-weather13.p.rapidapi.com")
 
@@ -42,7 +43,8 @@ def mins_to_text(minutes: int) -> str:
 @app.get("/health")
 def health():
     return {"status": "ok"}
-    
+
+
 class TripValidation(BaseModel):
     origin: str
     destination: str
@@ -110,26 +112,31 @@ async def search_flights(
 ):
     trip_type = "roundtrip" if return_date else "oneway"
 
-TripValidation(
-    origin=origin,
-    destination=destination,
-    departure_date=departure_date,
-    return_date=return_date,
-    adults=adults,
-    trip_type=trip_type,
-    stops="any",
-    budget=1000
-)
-if not RAPIDAPI_KEY:
-    raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
-async with httpx.AsyncClient(timeout=40) as client:
-    origin_res = await client.get(
-        f"https://{SKY_HOST}/api/v1/flights/searchAirport",
-        params={"query": origin},
-        headers=rapid_headers(SKY_HOST),
+    TripValidation(
+        origin=origin,
+        destination=destination,
+        departure_date=departure_date,
+        return_date=return_date,
+        adults=adults,
+        trip_type=trip_type,
+        stops="any",
+        budget=1000,
     )
-    if origin_res.status_code != 200:
-        raise HTTPException(status_code=500, detail=f"Origin airport lookup failed: {origin_res.text}")
+
+    if not RAPIDAPI_KEY:
+        raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
+
+    async with httpx.AsyncClient(timeout=40) as client:
+        origin_res = await client.get(
+            f"https://{SKY_HOST}/api/v1/flights/searchAirport",
+            params={"query": origin},
+            headers=rapid_headers(SKY_HOST),
+        )
+        if origin_res.status_code != 200:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Origin airport lookup failed: {origin_res.text}",
+            )
 
         dest_res = await client.get(
             f"https://{SKY_HOST}/api/v1/flights/searchAirport",
@@ -137,10 +144,14 @@ async with httpx.AsyncClient(timeout=40) as client:
             headers=rapid_headers(SKY_HOST),
         )
         if dest_res.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Destination airport lookup failed: {dest_res.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Destination airport lookup failed: {dest_res.text}",
+            )
 
         origin_data = origin_res.json()
         dest_data = dest_res.json()
+
         origin_airports = origin_data.get("data", [])
         dest_airports = dest_data.get("data", [])
 
@@ -162,6 +173,7 @@ async with httpx.AsyncClient(timeout=40) as client:
             "market": "IN",
             "locale": "en-IN",
         }
+
         if return_date:
             params["returnDate"] = return_date
 
@@ -171,7 +183,10 @@ async with httpx.AsyncClient(timeout=40) as client:
             headers=rapid_headers(SKY_HOST),
         )
         if flights_res.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Flight search failed: {flights_res.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Flight search failed: {flights_res.text}",
+            )
 
         raw = flights_res.json()
         itineraries = raw.get("data", {}).get("itineraries", []) or raw.get("itineraries", [])
@@ -180,9 +195,11 @@ async with httpx.AsyncClient(timeout=40) as client:
         for item in itineraries[:10]:
             legs = item.get("legs", [])
             first_leg = legs[0] if legs else {}
+
             carriers = first_leg.get("carriers", {})
             marketing = carriers.get("marketing", [])
             airline_name = marketing[0].get("name", "Unknown Airline") if marketing else "Unknown Airline"
+
             price_obj = item.get("price", {})
             duration_mins = first_leg.get("durationInMinutes", 0)
 
@@ -225,7 +242,10 @@ async def search_hotels(
             headers=rapid_headers(BOOKING_HOST),
         )
         if dest_res.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Destination search failed: {dest_res.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Destination search failed: {dest_res.text}",
+            )
 
         dest_json = dest_res.json()
         destinations = dest_json.get("data", [])
@@ -235,6 +255,7 @@ async def search_hotels(
         first_dest = destinations[0]
         dest_id = first_dest.get("dest_id")
         search_type = first_dest.get("search_type")
+
         if not dest_id or not search_type:
             raise HTTPException(status_code=500, detail="dest_id/search_type missing")
 
@@ -256,7 +277,10 @@ async def search_hotels(
             headers=rapid_headers(BOOKING_HOST),
         )
         if hotel_res.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Hotel search failed: {hotel_res.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Hotel search failed: {hotel_res.text}",
+            )
 
         raw = hotel_res.json()
         results = raw.get("data", {}).get("hotels", []) or raw.get("data", [])
@@ -265,11 +289,16 @@ async def search_hotels(
         for item in results[:10]:
             prop = item.get("property", item)
             gross = prop.get("priceBreakdown", {}).get("grossPrice", {})
+
             hotels.append({
                 "name": prop.get("name", "Unknown Hotel"),
                 "rating": prop.get("reviewScore", 0),
                 "price": gross.get("value", 0),
-                "formattedPrice": gross.get("currency") and gross.get("value") and f"{gross.get('currency')} {gross.get('value')}" or "",
+                "formattedPrice": (
+                    f"{gross.get('currency')} {gross.get('value')}"
+                    if gross.get("currency") and gross.get("value")
+                    else ""
+                ),
                 "currency": gross.get("currency", "INR"),
                 "area": prop.get("wishlistName", city),
                 "amenities": [],
@@ -292,7 +321,10 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
             headers=rapid_headers(WEATHER_HOST),
         )
         if current_res.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Weather lookup failed: {current_res.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Weather lookup failed: {current_res.text}",
+            )
 
         data = current_res.json()
         main = data.get("main", {})
