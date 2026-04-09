@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
-SKY_HOST = os.getenv("SKY_HOST", "skyscanner-flights-travel-api.p.rapidapi.com")
+SKY_HOST = os.getenv("SKY_HOST", "google-flights2.p.rapidapi.com")
 BOOKING_HOST = os.getenv("BOOKING_HOST", "booking-com15.p.rapidapi.com")
 WEATHER_HOST = os.getenv("WEATHER_HOST", "open-weather13.p.rapidapi.com")
 
@@ -29,6 +29,7 @@ def rapid_headers(host: str) -> dict:
     return {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
         "X-RapidAPI-Host": host,
+        "Content-Type": "application/json",
     }
 
 
@@ -40,9 +41,24 @@ def mins_to_text(minutes: int) -> str:
     return f"{hours}h {mins}m" if hours else f"{mins}m"
 
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+def debug_log(label: str, url: str, params: dict | None = None):
+    print("\n===== API DEBUG =====")
+    print("LABEL:", label)
+    print("URL:", url)
+    print("PARAMS:", params or {})
+    print("=====================\n")
+
+
+def map_travel_class(cabin_class: str) -> str:
+    value = (cabin_class or "").strip().lower()
+    mapping = {
+        "economy": "1",
+        "premium economy": "2",
+        "premium_economy": "2",
+        "business": "3",
+        "first": "4",
+    }
+    return mapping.get(value, "1")
 
 
 class TripValidation(BaseModel):
@@ -60,7 +76,8 @@ class TripValidation(BaseModel):
     def validate_city(cls, value: str):
         if not value or not value.strip():
             raise ValueError("City is required")
-        if not value.replace(" ", "").isalpha():
+        cleaned = value.replace(" ", "").replace("-", "")
+        if not cleaned.isalpha():
             raise ValueError("City must contain letters only")
         return value.strip()
 
@@ -101,6 +118,17 @@ class TripValidation(BaseModel):
         return self
 
 
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "rapidapi_key_loaded": bool(RAPIDAPI_KEY),
+        "sky_host": SKY_HOST,
+        "booking_host": BOOKING_HOST,
+        "weather_host": WEATHER_HOST,
+    }
+
+
 @app.get("/api/flights")
 async def search_flights(
     origin: str = Query(...),
@@ -126,10 +154,14 @@ async def search_flights(
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
-    async with httpx.AsyncClient(timeout=40) as client:
+    async with httpx.AsyncClient(timeout=45) as client:
+        airport_url = f"https://{SKY_HOST}/api/v1/searchAirport"
+
+        origin_params = {"query": origin}
+        debug_log("FLIGHT ORIGIN AIRPORT SEARCH", airport_url, origin_params)
         origin_res = await client.get(
-            f"https://{SKY_HOST}/api/v1/flights/searchAirport",
-            params={"query": origin},
+            airport_url,
+            params=origin_params,
             headers=rapid_headers(SKY_HOST),
         )
         if origin_res.status_code != 200:
@@ -138,9 +170,11 @@ async def search_flights(
                 detail=f"Origin airport lookup failed: {origin_res.text}",
             )
 
+        dest_params = {"query": destination}
+        debug_log("FLIGHT DESTINATION AIRPORT SEARCH", airport_url, dest_params)
         dest_res = await client.get(
-            f"https://{SKY_HOST}/api/v1/flights/searchAirport",
-            params={"query": destination},
+            airport_url,
+            params=dest_params,
             headers=rapid_headers(SKY_HOST),
         )
         if dest_res.status_code != 200:
@@ -149,37 +183,64 @@ async def search_flights(
                 detail=f"Destination airport lookup failed: {dest_res.text}",
             )
 
-        origin_data = origin_res.json()
-        dest_data = dest_res.json()
+        origin_json = origin_res.json()
+        dest_json = dest_res.json()
 
-        origin_airports = origin_data.get("data", [])
-        dest_airports = dest_data.get("data", [])
+        origin_data = origin_json.get("data", [])
+        dest_data = dest_json.get("data", [])
 
-        if not origin_airports or not dest_airports:
-            raise HTTPException(status_code=404, detail="Airport not found")
+        if not origin_data:
+            raise HTTPException(status_code=404, detail=f"No airport found for origin: {origin}")
+        if not dest_data:
+            raise HTTPException(status_code=404, detail=f"No airport found for destination: {destination}")
 
-        origin_item = origin_airports[0]
-        dest_item = dest_airports[0]
+        # usually this endpoint returns airport/code data; prefer "id", then fallback fields
+        origin_item = origin_data[0]
+        dest_item = dest_data[0]
 
-        params = {
-            "originSkyId": origin_item.get("skyId"),
-            "destinationSkyId": dest_item.get("skyId"),
-            "originEntityId": origin_item.get("entityId"),
-            "destinationEntityId": dest_item.get("entityId"),
-            "date": departure_date,
+        departure_id = (
+            origin_item.get("id")
+            or origin_item.get("airport_code")
+            or origin_item.get("iata_code")
+            or origin_item.get("skyId")
+        )
+        arrival_id = (
+            dest_item.get("id")
+            or dest_item.get("airport_code")
+            or dest_item.get("iata_code")
+            or dest_item.get("skyId")
+        )
+
+        if not departure_id or not arrival_id:
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "message": "Could not extract airport IDs from provider response",
+                    "origin_item": origin_item,
+                    "destination_item": dest_item,
+                },
+            )
+
+        flight_url = f"https://{SKY_HOST}/api/v1/searchFlights"
+        flight_params = {
+            "departure_id": departure_id,
+            "arrival_id": arrival_id,
+            "outbound_date": departure_date,
             "adults": adults,
-            "cabinClass": cabin_class,
-            "currency": "INR",
-            "market": "IN",
-            "locale": "en-IN",
+            "travel_class": map_travel_class(cabin_class),
+            "currency": "USD",
+            "country_code": "US",
+            "language_code": "en-US",
+            "type": "1" if return_date else "2",
         }
 
         if return_date:
-            params["returnDate"] = return_date
+            flight_params["return_date"] = return_date
 
+        debug_log("FLIGHT SEARCH", flight_url, flight_params)
         flights_res = await client.get(
-            f"https://{SKY_HOST}/api/v1/flights/searchFlights",
-            params=params,
+            flight_url,
+            params=flight_params,
             headers=rapid_headers(SKY_HOST),
         )
         if flights_res.status_code != 200:
@@ -189,33 +250,49 @@ async def search_flights(
             )
 
         raw = flights_res.json()
-        itineraries = raw.get("data", {}).get("itineraries", []) or raw.get("itineraries", [])
+
+        best_flights = raw.get("data", {}).get("best_flights", [])
+        other_flights = raw.get("data", {}).get("other_flights", [])
+        all_flights = best_flights + other_flights
+
+        if not all_flights:
+            # fallback for different provider shapes
+            all_flights = raw.get("best_flights", []) + raw.get("other_flights", []) + raw.get("data", [])
 
         flights = []
-        for item in itineraries[:10]:
-            legs = item.get("legs", [])
-            first_leg = legs[0] if legs else {}
+        for item in all_flights[:10]:
+            flights_list = item.get("flights", [])
+            first_leg = flights_list[0] if flights_list else {}
+            last_leg = flights_list[-1] if flights_list else {}
 
-            carriers = first_leg.get("carriers", {})
-            marketing = carriers.get("marketing", [])
-            airline_name = marketing[0].get("name", "Unknown Airline") if marketing else "Unknown Airline"
+            airline_name = first_leg.get("airline") or first_leg.get("name") or "Unknown Airline"
+            dep = first_leg.get("departure_airport", {}).get("time") or item.get("departure", "")
+            arr = last_leg.get("arrival_airport", {}).get("time") or item.get("arrival", "")
+            stops_count = max(len(flights_list) - 1, 0)
 
-            price_obj = item.get("price", {})
-            duration_mins = first_leg.get("durationInMinutes", 0)
+            duration_mins = item.get("total_duration", 0)
+            price = item.get("price", 0)
 
             flights.append({
                 "airline": airline_name,
-                "dep": first_leg.get("departure", ""),
-                "arr": first_leg.get("arrival", ""),
-                "stops": first_leg.get("stopCount", 0),
+                "dep": dep,
+                "arr": arr,
+                "stops": stops_count,
                 "duration": duration_mins,
                 "durationText": mins_to_text(duration_mins),
-                "price": price_obj.get("raw", 0),
-                "formattedPrice": price_obj.get("formatted", ""),
+                "price": price,
+                "formattedPrice": f"USD {price}" if price else "",
                 "raw": item,
             })
 
-        return {"flights": flights}
+        return {
+            "flights": flights,
+            "source": "live",
+            "airport_lookup": {
+                "origin": departure_id,
+                "destination": arrival_id,
+            },
+        }
 
 
 @app.get("/api/hotels")
@@ -236,11 +313,16 @@ async def search_hotels(
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
     async with httpx.AsyncClient(timeout=40) as client:
+        destination_url = f"https://{BOOKING_HOST}/api/v1/hotels/searchDestination"
+        destination_params = {"query": city}
+        debug_log("HOTEL DESTINATION SEARCH", destination_url, destination_params)
+
         dest_res = await client.get(
-            f"https://{BOOKING_HOST}/api/v1/hotels/searchDestination",
-            params={"query": city},
+            destination_url,
+            params=destination_params,
             headers=rapid_headers(BOOKING_HOST),
         )
+
         if dest_res.status_code != 200:
             raise HTTPException(
                 status_code=500,
@@ -259,23 +341,28 @@ async def search_hotels(
         if not dest_id or not search_type:
             raise HTTPException(status_code=500, detail="dest_id/search_type missing")
 
+        hotel_url = f"https://{BOOKING_HOST}/api/v1/hotels/searchHotels"
+        hotel_params = {
+            "dest_id": dest_id,
+            "search_type": search_type,
+            "arrival_date": checkin,
+            "departure_date": checkout,
+            "adults": adults,
+            "room_qty": room_qty,
+            "page_number": 1,
+            "units": "metric",
+            "temperature_unit": "c",
+            "languagecode": "en-us",
+            "currency_code": "INR",
+        }
+        debug_log("HOTEL SEARCH", hotel_url, hotel_params)
+
         hotel_res = await client.get(
-            f"https://{BOOKING_HOST}/api/v1/hotels/searchHotels",
-            params={
-                "dest_id": dest_id,
-                "search_type": search_type,
-                "arrival_date": checkin,
-                "departure_date": checkout,
-                "adults": adults,
-                "room_qty": room_qty,
-                "page_number": 1,
-                "units": "metric",
-                "temperature_unit": "c",
-                "languagecode": "en-us",
-                "currency_code": "INR",
-            },
+            hotel_url,
+            params=hotel_params,
             headers=rapid_headers(BOOKING_HOST),
         )
+
         if hotel_res.status_code != 200:
             raise HTTPException(
                 status_code=500,
@@ -309,17 +396,27 @@ async def search_hotels(
 
 
 @app.get("/api/climate")
-async def climate(city: str = Query(...), lang: str = Query("EN")):
+async def climate(city: str = Query(...)):
     if not city or not city.strip():
         raise HTTPException(status_code=400, detail="City is required")
     if not RAPIDAPI_KEY:
         raise HTTPException(status_code=500, detail="Missing RAPIDAPI_KEY")
 
     async with httpx.AsyncClient(timeout=30) as client:
+        weather_url = f"https://{WEATHER_HOST}/weather"
+        weather_params = {
+            "q": city,
+            "units": "metric",
+        }
+
+        debug_log("WEATHER SEARCH", weather_url, weather_params)
+
         current_res = await client.get(
-            f"https://{WEATHER_HOST}/city/{city}/{lang}",
+            weather_url,
+            params=weather_params,
             headers=rapid_headers(WEATHER_HOST),
         )
+
         if current_res.status_code != 200:
             raise HTTPException(
                 status_code=500,
@@ -329,12 +426,14 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
         data = current_res.json()
         main = data.get("main", {})
         weather_list = data.get("weather", [])
+        wind = data.get("wind", {})
         weather_text = weather_list[0].get("description", "") if weather_list else ""
 
         return {
             "temp": f"{round(main.get('temp', 0))}°C",
             "humidity": f"{main.get('humidity', 0)}%",
             "condition": weather_text or "N/A",
+            "windSpeed": wind.get("speed", 0),
             "rain": "N/A",
             "advisory": "Carry umbrella" if "rain" in weather_text.lower() else "Weather looks manageable",
             "raw": data,
