@@ -122,6 +122,110 @@ function BookButton({ href, label, color }) {
   );
 }
 
+function SuggestionInput({
+  label,
+  value,
+  placeholder,
+  error,
+  suggestions,
+  showSuggestions,
+  onChange,
+  onFocus,
+  onBlur,
+  onSelect,
+}) {
+  return (
+    <div style={{ position: "relative" }}>
+      <label
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--text-secondary)",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          marginBottom: 6,
+          display: "block",
+        }}
+      >
+        {label}
+      </label>
+
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        style={{
+          width: "100%",
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: "1px solid var(--border)",
+          background: "var(--input-bg)",
+          fontSize: 14,
+          color: "var(--text-primary)",
+          outline: "none",
+        }}
+      />
+
+      {showSuggestions && suggestions.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            background: "var(--card-bg)",
+            border: "1px solid var(--border)",
+            borderRadius: 10,
+            boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
+            zIndex: 20,
+            maxHeight: 220,
+            overflowY: "auto",
+          }}
+        >
+          {suggestions.map((item, idx) => (
+            <button
+              key={`${item.id || item.label}-${idx}`}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(item);
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "10px 12px",
+                border: "none",
+                borderBottom: idx < suggestions.length - 1 ? "1px solid var(--border)" : "none",
+                background: "transparent",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                {item.label}
+              </div>
+              {item.subtitle && (
+                <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+                  {item.subtitle}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div style={{ color: "#E17055", fontSize: 12, marginTop: 4 }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FlightCard({ flight, selected, onSelect, redirectUrl }) {
   const dep = flight.dep ? new Date(flight.dep).toLocaleString() : "N/A";
   const arr = flight.arr ? new Date(flight.arr).toLocaleString() : "N/A";
@@ -607,7 +711,14 @@ export default function TravelAgentOrchestrator() {
   const [hotels, setHotels] = useState([]);
   const [climate, setClimate] = useState(null);
   const [plan, setPlan] = useState(null);
+  const [fromSuggestions, setFromSuggestions] = useState([]);
+  const [toSuggestions, setToSuggestions] = useState([]);
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false);
+  const [showToSuggestions, setShowToSuggestions] = useState(false);
+
   const logsEndRef = useRef(null);
+  const fromDebounceRef = useRef(null);
+  const toDebounceRef = useRef(null);
 
   const nights = form.tripType === "oneway" ? 0 : calcNights(form.date, form.returnDate);
 
@@ -653,6 +764,82 @@ export default function TravelAgentOrchestrator() {
     setErrors((prev) => ({ ...prev, [key]: "", returnDate: key === "date" ? "" : prev.returnDate }));
   };
 
+  const fetchAirportSuggestions = async (query, field) => {
+    const value = query.trim();
+
+    if (value.length < 2) {
+      if (field === "from") {
+        setFromSuggestions([]);
+        setShowFromSuggestions(false);
+      } else {
+        setToSuggestions([]);
+        setShowToSuggestions(false);
+      }
+      return;
+    }
+
+    try {
+      const url = new URL("/api/airport-suggestions", `${API_BASE}/`);
+      url.searchParams.set("q", value);
+
+      const res = await fetch(url.toString());
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Suggestion lookup failed");
+      }
+
+      const suggestions = data.suggestions || [];
+
+      if (field === "from") {
+        setFromSuggestions(suggestions);
+        setShowFromSuggestions(true);
+      } else {
+        setToSuggestions(suggestions);
+        setShowToSuggestions(true);
+      }
+    } catch (err) {
+      console.error(`${field} suggestions error:`, err);
+      if (field === "from") {
+        setFromSuggestions([]);
+        setShowFromSuggestions(false);
+      } else {
+        setToSuggestions([]);
+        setShowToSuggestions(false);
+      }
+    }
+  };
+
+  const handleAirportInputChange = (field, value) => {
+    updateField(field, value);
+
+    if (field === "from") {
+      setShowFromSuggestions(true);
+      if (fromDebounceRef.current) clearTimeout(fromDebounceRef.current);
+      fromDebounceRef.current = setTimeout(() => {
+        fetchAirportSuggestions(value, "from");
+      }, 350);
+    } else {
+      setShowToSuggestions(true);
+      if (toDebounceRef.current) clearTimeout(toDebounceRef.current);
+      toDebounceRef.current = setTimeout(() => {
+        fetchAirportSuggestions(value, "to");
+      }, 350);
+    }
+  };
+
+  const selectSuggestion = (field, suggestion) => {
+    updateField(field, suggestion.title || suggestion.label || "");
+
+    if (field === "from") {
+      setFromSuggestions([]);
+      setShowFromSuggestions(false);
+    } else {
+      setToSuggestions([]);
+      setShowToSuggestions(false);
+    }
+  };
+
   const resetTrip = () => {
     setPhase("input");
     setLogs([]);
@@ -664,6 +851,10 @@ export default function TravelAgentOrchestrator() {
     setPlan(null);
     setFlights([]);
     setHotels([]);
+    setFromSuggestions([]);
+    setToSuggestions([]);
+    setShowFromSuggestions(false);
+    setShowToSuggestions(false);
   };
 
   const runOrchestrator = async () => {
@@ -826,7 +1017,7 @@ export default function TravelAgentOrchestrator() {
         @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(108,92,231,0.3); } 50% { box-shadow: 0 0 0 8px rgba(108,92,231,0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        input, select { font-family: inherit; }
+        input, select, button { font-family: inherit; }
         a:hover { opacity: 0.85; }
       `}</style>
 
@@ -947,10 +1138,44 @@ export default function TravelAgentOrchestrator() {
                 </div>
               </div>
 
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                <SuggestionInput
+                  label="From"
+                  value={form.from}
+                  placeholder="Delhi"
+                  error={errors.from}
+                  suggestions={fromSuggestions}
+                  showSuggestions={showFromSuggestions}
+                  onChange={(value) => handleAirportInputChange("from", value)}
+                  onFocus={() => {
+                    if (fromSuggestions.length > 0) setShowFromSuggestions(true);
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowFromSuggestions(false), 150);
+                  }}
+                  onSelect={(item) => selectSuggestion("from", item)}
+                />
+
+                <SuggestionInput
+                  label="To"
+                  value={form.to}
+                  placeholder="Paris"
+                  error={errors.to}
+                  suggestions={toSuggestions}
+                  showSuggestions={showToSuggestions}
+                  onChange={(value) => handleAirportInputChange("to", value)}
+                  onFocus={() => {
+                    if (toSuggestions.length > 0) setShowToSuggestions(true);
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowToSuggestions(false), 150);
+                  }}
+                  onSelect={(item) => selectSuggestion("to", item)}
+                />
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 {[
-                  { key: "from", label: "From", placeholder: "Delhi", type: "text" },
-                  { key: "to", label: "To", placeholder: "Paris", type: "text" },
                   { key: "date", label: "Departure date", placeholder: "", type: "date" },
                   ...(form.tripType === "roundtrip"
                     ? [{ key: "returnDate", label: "Return date", placeholder: "", type: "date" }]
