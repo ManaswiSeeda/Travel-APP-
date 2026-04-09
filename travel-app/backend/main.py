@@ -267,11 +267,11 @@ async def search_flights(
                     or data.get("itineraries", []))
             elif isinstance(data, list):
                 all_flights = data
-         if not all_flights:
-             all_flights = (
-                 raw.get("flights", [])
-                 or raw.get("results", [])
-                 or raw.get("itineraries", []))
+        if not all_flights:
+            all_flights = (
+                raw.get("flights", [])
+                or raw.get("results", [])
+                or raw.get("itineraries", []))
          print("PARSED FLIGHTS COUNT:", len(all_flights))
 
         flights = []
