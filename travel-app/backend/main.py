@@ -250,14 +250,29 @@ async def search_flights(
             )
 
         raw = flights_res.json()
+        print("===== FULL FLIGHT API RESPONSE =====")
+        print(raw)
+        print("====================================")
 
-        best_flights = raw.get("data", {}).get("best_flights", [])
-        other_flights = raw.get("data", {}).get("other_flights", [])
-        all_flights = best_flights + other_flights
-
-        if not all_flights:
-            # fallback for different provider shapes
-            all_flights = raw.get("best_flights", []) + raw.get("other_flights", []) + raw.get("data", [])
+        all_flights = []
+        if isinstance(raw, dict):
+            data = raw.get("data")
+            
+            if isinstance(data, dict):
+                all_flights = (
+                    data.get("best_flights", [])
+                    or data.get("other_flights", [])
+                    or data.get("flights", [])
+                    or data.get("results", [])
+                    or data.get("itineraries", []))
+            elif isinstance(data, list):
+                all_flights = data
+         if not all_flights:
+             all_flights = (
+                 raw.get("flights", [])
+                 or raw.get("results", [])
+                 or raw.get("itineraries", []))
+         print("PARSED FLIGHTS COUNT:", len(all_flights))
 
         flights = []
         for item in all_flights[:10]:
