@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE = (RAW_API_BASE || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
 const AGENT_CONFIG = {
   orchestrator: { name: "Orchestrator", icon: "◈", color: "#6C5CE7" },
@@ -167,7 +168,7 @@ function FlightCard({ flight, selected, onSelect, redirectUrl }) {
             </div>
             <div style={{ fontSize: 10, color: "#888" }}>per person</div>
           </div>
-          {selected && <BookButton href={redirectUrl} label="Continue to Skyscanner" color="#0984E3" />}
+          {selected && <BookButton href={redirectUrl} label="Continue to Google Flights" color="#0984E3" />}
         </div>
       </div>
     </div>
@@ -640,12 +641,7 @@ export default function TravelAgentOrchestrator() {
       .filter(Boolean).length || 1
   );
 
-  const skyscannerRedirect = `https://www.skyscanner.co.in/transport/flights?from=${encodeURIComponent(
-    form.from
-  )}&to=${encodeURIComponent(form.to)}&depart=${encodeURIComponent(form.date || "")}${
-    form.returnDate ? `&return=${encodeURIComponent(form.returnDate)}` : ""
-  }`;
-
+  const googleFlightsRedirect = `https://www.google.com/travel/flights`;
   const bookingRedirect = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
     form.to
   )}&checkin=${encodeURIComponent(form.date || "")}&checkout=${encodeURIComponent(
@@ -669,7 +665,8 @@ export default function TravelAgentOrchestrator() {
     setFlights([]);
     setHotels([]);
   };
-   const runOrchestrator = async () => {
+
+  const runOrchestrator = async () => {
     const validationErrors = validateForm(form);
     setErrors(validationErrors);
 
@@ -731,7 +728,7 @@ export default function TravelAgentOrchestrator() {
       await addLog("orchestrator", "Calling live APIs for flights, hotels, and climate...", 350);
 
       setPipelineStep(3);
-      const flightUrl = new URL(`${API_BASE}/api/flights`);
+      const flightUrl = new URL("/api/flights", `${API_BASE}/`);
       flightUrl.searchParams.set("origin", form.from);
       flightUrl.searchParams.set("destination", form.to);
       flightUrl.searchParams.set("departure_date", form.date);
@@ -748,11 +745,11 @@ export default function TravelAgentOrchestrator() {
       }
 
       setFlights(flightData.flights || []);
-      await addLog("flight", `Loaded ${flightData.flights?.length || 0} live flights from Skyscanner source`, 350);
+      await addLog("flight", `Loaded ${flightData.flights?.length || 0} live flights from Google Flights source`, 350);
 
       if (!isOneWay) {
         setPipelineStep(4);
-        const hotelUrl = new URL(`${API_BASE}/api/hotels`);
+        const hotelUrl = new URL("/api/hotels", `${API_BASE}/`);
         hotelUrl.searchParams.set("city", form.to);
         hotelUrl.searchParams.set("checkin", form.date);
         hotelUrl.searchParams.set("checkout", form.returnDate);
@@ -772,7 +769,7 @@ export default function TravelAgentOrchestrator() {
       }
 
       setPipelineStep(5);
-      const climateUrl = new URL(`${API_BASE}/api/climate`);
+      const climateUrl = new URL("/api/climate", `${API_BASE}/`);
       climateUrl.searchParams.set("city", form.to);
 
       const climateRes = await fetch(climateUrl.toString());
@@ -1278,7 +1275,7 @@ export default function TravelAgentOrchestrator() {
                       <AgentBadge agent="flight" />
                       <span style={{ fontSize: 14, fontWeight: 700 }}>Available flights</span>
                     </div>
-                    <BookButton href={skyscannerRedirect} label="Open Skyscanner" color="#0984E3" />
+                    <BookButton href={googleFlightsRedirect} label="Open Google Flights" color="#0984E3" />
                   </div>
 
                   {flights.length === 0 ? (
@@ -1290,7 +1287,7 @@ export default function TravelAgentOrchestrator() {
                         flight={f}
                         selected={selectedFlight === i}
                         onSelect={() => setSelectedFlight(i)}
-                        redirectUrl={skyscannerRedirect}
+                        redirectUrl={googleFlightsRedirect}
                       />
                     ))
                   )}
@@ -1477,7 +1474,7 @@ export default function TravelAgentOrchestrator() {
                     </div>
 
                     <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center", flexWrap: "wrap" }}>
-                      <BookButton href={skyscannerRedirect} label="Book flight on Skyscanner" color="#0984E3" />
+                      <BookButton href={googleFlightsRedirect} label="Book flight on Google Flights" color="#0984E3" />
                       {form.tripType === "roundtrip" && (
                         <BookButton href={bookingRedirect} label="Book hotel on Booking.com" color="#E17055" />
                       )}
