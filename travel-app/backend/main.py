@@ -375,20 +375,20 @@ async def search_flights(
                 "destination": destination,
                 "raw": item,
             })
-            print("FINAL RETURN FLIGHTS COUNT:", len(flights))
-            return {
-                "flights": flights,
-                "source": "google_flights",
-                "provider_name": "Google Flights",
-                "route": {
-                    "origin": origin,
-                    "destination": destination,
-                },
-                "airport_lookup": {
-                    "origin_id": departure_id,
-                    "destination_id": arrival_id,
-                },
-            }
+        print("FINAL RETURN FLIGHTS COUNT:", len(flights))
+        return {
+            "flights": flights,
+            "source": "google_flights",
+            "provider_name": "Google Flights",
+            "route": {
+                "origin": origin,
+                "destination": destination,
+            },
+            "airport_lookup": {
+                "origin_id": departure_id,
+                "destination_id": arrival_id,
+            },
+        }
         
 
 @app.get("/api/hotels")
