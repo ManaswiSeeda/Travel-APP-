@@ -159,33 +159,47 @@ async def airport_suggestions(q: str = Query(..., min_length=2)):
 
         suggestions = []
         for item in data[:8]:
-            presentation = item.get("presentation", {}) if isinstance(item, dict) else {}
+            if not isinstance(item, dict):
+                continue
+
+            presentation = item.get("presentation", {}) or {}
 
             title = (
                 presentation.get("title")
                 or item.get("name")
                 or item.get("airport_name")
-                or item.get("id")
+                or item.get("city")
                 or "Unknown"
             )
 
             subtitle = (
                 presentation.get("subtitle")
                 or item.get("subtitle")
-                or item.get("airport_code")
-                or item.get("iata_code")
                 or ""
             )
 
-            airport_code = item.get("airport_code") or item.get("iata_code") or ""
-            entity_id = item.get("id") or item.get("skyId") or ""
+            airport_code = (
+                item.get("airport_code")
+                or item.get("iata_code")
+                or presentation.get("skyId")
+                or ""
+            )
+
+            city_name = (
+                item.get("city")
+                or presentation.get("title")
+                or title
+            )
+
+            label = f"{title} ({airport_code})" if airport_code else title
 
             suggestions.append({
-                "label": f"{title} ({airport_code})" if airport_code else title,
-                "title": title,
-                "subtitle": subtitle,
+                "label": label,              # what to show in input after click
+                "title": title,              # main line in dropdown
+                "subtitle": subtitle,        # second line in dropdown
+                "city": city_name,
                 "airport_code": airport_code,
-                "id": entity_id,
+                "id": item.get("id") or item.get("skyId") or airport_code or title,
                 "raw": item,
             })
 
