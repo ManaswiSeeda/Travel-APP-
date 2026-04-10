@@ -704,8 +704,9 @@ export default function TravelAgentOrchestrator() {
     gender: "",
     stops: "nonstop",
     tripType: "roundtrip",
+    preferences:"",
   });
-
+  const [aiPlan, setAiPlan] = useState(null);
   const [phase, setPhase] = useState("input");
   const [logs, setLogs] = useState([]);
   const [errors, setErrors] = useState({});
@@ -892,6 +893,33 @@ export default function TravelAgentOrchestrator() {
       const flightBudget = isOneWay ? Math.round(budget * 0.6) : Math.round(budget * 0.45);
       const hotelBudget = isOneWay ? Math.round(budget * 0.2) : Math.round(budget * 0.35);
       const miscBudget = Math.round(budget * 0.2);
+
+      const flightBudget = isOneWay ? Math.round(budget * 0.6) : Math.round(budget * 0.45);
+      const hotelBudget = isOneWay ? Math.round(budget * 0.2) : Math.round(budget * 0.35);
+      const miscBudget = Math.round(budget * 0.2);
+      try {
+        await addLog("planning", "Asking Claude AI for personalized recommendations...", 400);
+        const planRes = await fetch(`${API_BASE}/api/plan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            origin: form.from,
+            destination: form.to,
+            departure_date: form.date,
+            return_date: form.returnDate,
+            budget: budget,
+            adults: travelerCount,
+            preferences: form.preferences,
+          }),
+        });
+        const planJson = await planRes.json();
+        if (planJson.plan && !planJson.plan.parse_error) {
+          setAiPlan(planJson.plan);
+          await addLog("planning", "AI personalized plan ready!", 300);
+        }
+      } catch (err) {
+        await addLog("planning", "AI unavailable — using default plan", 300);
+      }
 
       await addLog("orchestrator", `Received ${isOneWay ? "one-way" : "round-trip"} request: ${form.from} → ${form.to}`, 300);
       await addLog(
@@ -1294,6 +1322,24 @@ export default function TravelAgentOrchestrator() {
                   </span>
                 </div>
               )}
+              {/* Preferences input for AI planning */}
+              <div style={{ marginTop: 16 }}>
+                <label style={{
+                  fontSize: 11, fontWeight: 700, color: "var(--text-secondary)",
+                  textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, display: "block",
+                }}>What do you enjoy? (optional — powers AI recommendations)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. art, street food, photography, adventure..."
+                  value={form.preferences}
+                  onChange={(e) => setForm({ ...form, preferences: e.target.value })}
+                  style={{
+                    width: "100%", padding: "10px 12px", borderRadius: 8,
+                    border: "1px solid var(--border)", background: "var(--input-bg)",
+                    fontSize: 14, color: "var(--text-primary)", outline: "none",
+                  }}
+                />
+              </div>
 
               <button
                 onClick={runOrchestrator}
@@ -1395,7 +1441,45 @@ export default function TravelAgentOrchestrator() {
 
             {phase === "results" && (
               <>
-                {form.tripType === "roundtrip" && <ItineraryCard form={form} nights={nights} climate={climate} />}
+                {/* AI personalized itinerary — shows when Claude AI returned a plan */}
+                {aiPlan && aiPlan.itinerary && (
+                <div style={{
+                  background: "var(--card-bg)", border: "1px solid #00B89440",
+                  borderRadius: 14, padding: 20, marginBottom: 20,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                    <AgentBadge agent="planning" />
+                    <span style={{ fontSize: 14, fontWeight: 700 }}>AI personalized itinerary</span>
+                  </div>
+                  {aiPlan.itinerary.map((day, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+                    <div style={{
+                    width: 24, height: 24, borderRadius: "50%", background: "#00B894",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, color: "#fff", fontWeight: 800, flexShrink: 0,
+                  }}>{day.day}</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "#00B894", marginBottom: 4 }}>{day.title}</div>
+                      {day.activities.map((act, j) => (
+                    <div key={j} style={{
+                      fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6,
+                      paddingLeft: 10, borderLeft: "2px solid var(--border)", marginBottom: 3,
+                    }}>{act}</div>))}
+                    </div>
+                  </div>
+                ))}
+                  {aiPlan.tips && (
+                  <div style={{ marginTop: 16, padding: 14, background: "#FDCB6E10", border: "1px solid #FDCB6E30", borderRadius: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#FDCB6E", marginBottom: 8, textTransform: "uppercase" }}>AI tips</div>
+                    {aiPlan.tips.map((tip, i) => (
+                    <div key={i} style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>→ {tip}</div>
+                  ))}
+                  </div>
+                )}
+                </div>
+              )}
+                {/* Generic itinerary — shows only when AI plan is NOT available */}
+                {!aiPlan && form.tripType === "roundtrip" && <ItineraryCard form={form} nights={nights} climate={climate} />}
 
                 {plan && (
                   <div
