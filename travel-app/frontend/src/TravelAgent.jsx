@@ -212,6 +212,11 @@ function SuggestionInput({
                   {item.subtitle}
                 </div>
               )}
+              {item.airport_code && (
+                <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
+                  Airport code: {item.airport_code}
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -715,6 +720,7 @@ export default function TravelAgentOrchestrator() {
   const [toSuggestions, setToSuggestions] = useState([]);
   const [showFromSuggestions, setShowFromSuggestions] = useState(false);
   const [showToSuggestions, setShowToSuggestions] = useState(false);
+  const [activeTab, setActiveTab] = useState("flights");
 
   const logsEndRef = useRef(null);
   const fromDebounceRef = useRef(null);
@@ -764,22 +770,64 @@ export default function TravelAgentOrchestrator() {
     setErrors((prev) => ({ ...prev, [key]: "", returnDate: key === "date" ? "" : prev.returnDate }));
   };
 
+  const fetchAirportSuggestions = async (value, field) => {
+    const query = value.trim();
+
+    if (query.length < 2) {
+      if (field === "from") {
+        setFromSuggestions([]);
+      } else {
+        setToSuggestions([]);
+      }
+      return;
+    }
+
+    try {
+      const url = new URL("/api/airport-suggestions", `${API_BASE}/`);
+      url.searchParams.set("q", query);
+
+      const res = await fetch(url.toString());
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to load suggestions");
+      }
+
+      const suggestions = data.suggestions || [];
+
+      if (field === "from") {
+        setFromSuggestions(suggestions);
+        setShowFromSuggestions(true);
+      } else {
+        setToSuggestions(suggestions);
+        setShowToSuggestions(true);
+      }
+    } catch (err) {
+      console.error("Airport suggestion error:", err);
+      if (field === "from") {
+        setFromSuggestions([]);
+      } else {
+        setToSuggestions([]);
+      }
+    }
+  };
+
   const selectSuggestion = (field, suggestion) => {
-  const finalValue =
-    suggestion.label ||
-    suggestion.title ||
-    suggestion.city ||
-    "";
+    const finalValue =
+      suggestion.label ||
+      suggestion.title ||
+      suggestion.city ||
+      "";
 
-  updateField(field, finalValue.trim());
+    updateField(field, finalValue.trim());
 
-  if (field === "from") {
-    setFromSuggestions([]);
-    setShowFromSuggestions(false);
-  } else {
-    setToSuggestions([]);
-    setShowToSuggestions(false);
-  }
+    if (field === "from") {
+      setFromSuggestions([]);
+      setShowFromSuggestions(false);
+    } else {
+      setToSuggestions([]);
+      setShowToSuggestions(false);
+    }
   };
 
   const handleAirportInputChange = (field, value) => {
@@ -815,6 +863,7 @@ export default function TravelAgentOrchestrator() {
     setToSuggestions([]);
     setShowFromSuggestions(false);
     setShowToSuggestions(false);
+    setActiveTab("flights");
   };
 
   const runOrchestrator = async () => {
@@ -835,6 +884,7 @@ export default function TravelAgentOrchestrator() {
     setHotels([]);
     setClimate(null);
     setPlan(null);
+    setActiveTab("flights");
 
     try {
       const isOneWay = form.tripType === "oneway";
@@ -1442,43 +1492,104 @@ export default function TravelAgentOrchestrator() {
                     background: "var(--card-bg)",
                     border: "1px solid var(--border)",
                     borderRadius: 14,
-                    padding: 20,
+                    padding: 10,
                     marginBottom: 20,
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 16,
-                      flexWrap: "wrap",
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <AgentBadge agent="flight" />
-                      <span style={{ fontSize: 14, fontWeight: 700 }}>Available flights</span>
-                    </div>
-                    <BookButton href={googleFlightsRedirect} label="Open Google Flights" color="#0984E3" />
-                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => setActiveTab("flights")}
+                      style={{
+                        padding: "10px 16px",
+                        borderRadius: 8,
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        background: activeTab === "flights" ? "#0984E3" : "var(--input-bg)",
+                        color: activeTab === "flights" ? "#fff" : "var(--text-primary)",
+                      }}
+                    >
+                      Flights ({flights.length})
+                    </button>
 
-                  {flights.length === 0 ? (
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>No flights returned.</div>
-                  ) : (
-                    flights.map((f, i) => (
-                      <FlightCard
-                        key={i}
-                        flight={f}
-                        selected={selectedFlight === i}
-                        onSelect={() => setSelectedFlight(i)}
-                        redirectUrl={googleFlightsRedirect}
-                      />
-                    ))
-                  )}
+                    {form.tripType === "roundtrip" && (
+                      <button
+                        onClick={() => setActiveTab("hotels")}
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: 8,
+                          border: "none",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                          background: activeTab === "hotels" ? "#E17055" : "var(--input-bg)",
+                          color: activeTab === "hotels" ? "#fff" : "var(--text-primary)",
+                        }}
+                      >
+                        Hotels ({hotels.length})
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setActiveTab("weather")}
+                      style={{
+                        padding: "10px 16px",
+                        borderRadius: 8,
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        background: activeTab === "weather" ? "#FDCB6E" : "var(--input-bg)",
+                        color: activeTab === "weather" ? "#1A1A2E" : "var(--text-primary)",
+                      }}
+                    >
+                      Weather
+                    </button>
+                  </div>
                 </div>
 
-                {form.tripType === "roundtrip" ? (
+                {activeTab === "flights" && (
+                  <div
+                    style={{
+                      background: "var(--card-bg)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 20,
+                      marginBottom: 20,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 16,
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <AgentBadge agent="flight" />
+                        <span style={{ fontSize: 14, fontWeight: 700 }}>Available flights</span>
+                      </div>
+                      <BookButton href={googleFlightsRedirect} label="Open Google Flights" color="#0984E3" />
+                    </div>
+
+                    {flights.length === 0 ? (
+                      <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>No flights returned.</div>
+                    ) : (
+                      flights.map((f, i) => (
+                        <FlightCard
+                          key={i}
+                          flight={f}
+                          selected={selectedFlight === i}
+                          onSelect={() => setSelectedFlight(i)}
+                          redirectUrl={googleFlightsRedirect}
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "hotels" && form.tripType === "roundtrip" && (
                   <div
                     style={{
                       background: "var(--card-bg)",
@@ -1520,29 +1631,9 @@ export default function TravelAgentOrchestrator() {
                       ))
                     )}
                   </div>
-                ) : (
-                  <div
-                    style={{
-                      background: "var(--card-bg)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 14,
-                      padding: 20,
-                      marginBottom: 20,
-                      textAlign: "center",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <AgentBadge agent="hotel" />
-                      <span style={{ fontSize: 14, fontWeight: 700 }}>Hotels</span>
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>
-                      One-way trip — book your hotel separately once you know your stay duration.
-                    </div>
-                    <BookButton href={bookingRedirect} label={`Search hotels in ${form.to} on Booking.com`} color="#E17055" />
-                  </div>
                 )}
 
-                {climate && (
+                {activeTab === "weather" && climate && (
                   <div
                     style={{
                       background: "var(--card-bg)",
