@@ -1311,7 +1311,7 @@ export default function TravelAgentOrchestrator() {
                   letterSpacing: "0.02em",
                 }}
               >
-                Launch agents ◈
+                Plan your Trip ◈
               </button>
             </div>
           </div>
