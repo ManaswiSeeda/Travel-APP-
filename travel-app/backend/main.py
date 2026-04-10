@@ -25,6 +25,7 @@ RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
 SKY_HOST = os.getenv("SKY_HOST", "google-flights2.p.rapidapi.com")
 BOOKING_HOST = os.getenv("BOOKING_HOST", "booking-com15.p.rapidapi.com")
 WEATHER_HOST = os.getenv("WEATHER_HOST", "open-weather13.p.rapidapi.com")
+CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", "")
 
 
 def rapid_headers(host: str) -> dict:
@@ -604,37 +605,46 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
             "raw": data,
         }
 
-claude_client = Anthropic(api_key=os.getenv("CLAUDE_API_KEY", ""))
-
 @app.post("/api/plan")
 async def ai_plan(data: dict):
-    if not os.getenv("CLAUDE_API_KEY"):
+    if not CLAUDE_API_KEY:
         raise HTTPException(status_code=500, detail="Missing CLAUDE_API_KEY")
 
-    message = claude_client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
-        messages=[{
-            "role": "user",
-            "content": f"""Plan a trip: {data.get('origin')} to {data.get('destination')}.
-Dates: {data.get('departure_date')} to {data.get('return_date')}.
-Budget: ${data.get('budget')} USD for {data.get('adults')} travelers.
+    client = Anthropic(api_key=CLAUDE_API_KEY)
+
+    prompt = f"""Plan a trip from {data.get('origin', '')} to {data.get('destination', '')}.
+Dates: {data.get('departure_date', '')} to {data.get('return_date', '')}.
+Budget: ${data.get('budget', 1000)} USD for {data.get('adults', 1)} travelers.
 Interests: {data.get('preferences', 'general sightseeing')}.
 
-Return ONLY valid JSON (no markdown):
+Return ONLY valid JSON with no markdown formatting, no backticks, no explanation. Just pure JSON:
 {{
-  "budget": [{{"label":"...", "amount":..., "note":"..."}}],
-  "itinerary": [{{"day":1, "title":"...", "activities":["...", "..."]}}],
-  "tips": ["...", "..."]
-}}"""
-        }]
+  "budget": [
+    {{"label": "category name", "amount": number, "note": "why this amount"}}
+  ],
+  "itinerary": [
+    {{"day": 1, "title": "day title", "activities": ["specific activity 1", "specific activity 2", "specific activity 3", "specific activity 4"]}}
+  ],
+  "tips": ["specific helpful tip 1", "specific helpful tip 2", "specific helpful tip 3"]
+}}
+
+Make every recommendation specific - real restaurant names, real attraction names, real prices. Personalize based on their interests."""
+
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}],
     )
 
-   
     text = message.content[0].text
+
     try:
         plan = json.loads(text)
-    except:
-        plan = {"raw_response": text}
+    except Exception:
+        clean = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        try:
+            plan = json.loads(clean)
+        except Exception:
+            plan = {"raw_response": text, "parse_error": True}
 
     return {"plan": plan}
