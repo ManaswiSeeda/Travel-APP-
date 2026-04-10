@@ -205,7 +205,7 @@ function SuggestionInput({
               }}
             >
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                {item.display_name || item.input_value || item.name || item.city || "Unknown"}
+                {item.title || item.label || item.city || "Unknown"}
               </div>
               {item.subtitle && (
                 <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
@@ -766,10 +766,9 @@ export default function TravelAgentOrchestrator() {
 
   const selectSuggestion = (field, suggestion) => {
   const finalValue =
-    suggestion.input_value ||
+    suggestion.label ||
+    suggestion.title ||
     suggestion.city ||
-    suggestion.name ||
-    suggestion.display_name ||
     "";
 
   updateField(field, finalValue.trim());
@@ -781,7 +780,7 @@ export default function TravelAgentOrchestrator() {
     setToSuggestions([]);
     setShowToSuggestions(false);
   }
-};
+  };
 
   const handleAirportInputChange = (field, value) => {
     updateField(field, value);
@@ -800,25 +799,6 @@ export default function TravelAgentOrchestrator() {
       }, 350);
     }
   };
-
-  const selectSuggestion = (field, suggestion) => {
-  const finalValue =
-    suggestion.input_value ||
-    suggestion.city ||
-    suggestion.name ||
-    suggestion.display_name ||
-    "";
-
-  updateField(field, finalValue.trim());
-
-  if (field === "from") {
-    setFromSuggestions([]);
-    setShowFromSuggestions(false);
-  } else {
-    setToSuggestions([]);
-    setShowToSuggestions(false);
-  }
-};
 
   const resetTrip = () => {
     setPhase("input");
