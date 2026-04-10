@@ -6,6 +6,8 @@ import os
 from pydantic import BaseModel, field_validator, model_validator
 from typing import Literal, Optional
 from datetime import date
+from anthropic import Anthropic
+import json
 
 load_dotenv()
 
@@ -601,3 +603,38 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
             "advisory": "Carry umbrella" if "rain" in weather_text.lower() else "Weather looks manageable",
             "raw": data,
         }
+
+claude_client = Anthropic(api_key=os.getenv("CLAUDE_API_KEY", ""))
+
+@app.post("/api/plan")
+async def ai_plan(data: dict):
+    if not os.getenv("CLAUDE_API_KEY"):
+        raise HTTPException(status_code=500, detail="Missing CLAUDE_API_KEY")
+
+    message = claude_client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=2000,
+        messages=[{
+            "role": "user",
+            "content": f"""Plan a trip: {data.get('origin')} to {data.get('destination')}.
+Dates: {data.get('departure_date')} to {data.get('return_date')}.
+Budget: ${data.get('budget')} USD for {data.get('adults')} travelers.
+Interests: {data.get('preferences', 'general sightseeing')}.
+
+Return ONLY valid JSON (no markdown):
+{{
+  "budget": [{{"label":"...", "amount":..., "note":"..."}}],
+  "itinerary": [{{"day":1, "title":"...", "activities":["...", "..."]}}],
+  "tips": ["...", "..."]
+}}"""
+        }]
+    )
+
+   
+    text = message.content[0].text
+    try:
+        plan = json.loads(text)
+    except:
+        plan = {"raw_response": text}
+
+    return {"plan": plan}
