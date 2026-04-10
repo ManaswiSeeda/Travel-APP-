@@ -894,33 +894,6 @@ export default function TravelAgentOrchestrator() {
       const hotelBudget = isOneWay ? Math.round(budget * 0.2) : Math.round(budget * 0.35);
       const miscBudget = Math.round(budget * 0.2);
 
-      const flightBudget = isOneWay ? Math.round(budget * 0.6) : Math.round(budget * 0.45);
-      const hotelBudget = isOneWay ? Math.round(budget * 0.2) : Math.round(budget * 0.35);
-      const miscBudget = Math.round(budget * 0.2);
-      try {
-        await addLog("planning", "Asking Claude AI for personalized recommendations...", 400);
-        const planRes = await fetch(`${API_BASE}/api/plan`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            origin: form.from,
-            destination: form.to,
-            departure_date: form.date,
-            return_date: form.returnDate,
-            budget: budget,
-            adults: travelerCount,
-            preferences: form.preferences,
-          }),
-        });
-        const planJson = await planRes.json();
-        if (planJson.plan && !planJson.plan.parse_error) {
-          setAiPlan(planJson.plan);
-          await addLog("planning", "AI personalized plan ready!", 300);
-        }
-      } catch (err) {
-        await addLog("planning", "AI unavailable — using default plan", 300);
-      }
-
       await addLog("orchestrator", `Received ${isOneWay ? "one-way" : "round-trip"} request: ${form.from} → ${form.to}`, 300);
       await addLog(
         "orchestrator",
@@ -953,9 +926,40 @@ export default function TravelAgentOrchestrator() {
       );
       await addLog("planning", "Travel plan built. Returning to Orchestrator.", 300);
 
+      // AI Planning — try to get personalized plan from Claude
+      setAiPlan(null);
+      try {
+        await addLog("planning", "Asking Claude AI for personalized recommendations...", 400);
+        const planRes = await fetch(`${API_BASE}/api/plan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            origin: form.from,
+            destination: form.to,
+            departure_date: form.date,
+            return_date: form.returnDate,
+            budget: budget,
+            adults: travelerCount,
+            preferences: form.preferences,
+          }),
+        });
+        if (planRes.ok) {
+          const planJson = await planRes.json();
+          if (planJson.plan && !planJson.plan.parse_error) {
+            setAiPlan(planJson.plan);
+            await addLog("planning", "AI personalized itinerary ready!", 300);
+          } else {
+            await addLog("planning", "AI response couldn't be parsed — using default plan", 300);
+          }
+        } else {
+          await addLog("planning", "AI unavailable — using default plan", 300);
+        }
+      } catch (aiErr) {
+        await addLog("planning", "AI unavailable — using default plan", 300);
+      }
+
       setPipelineStep(2);
       await addLog("orchestrator", "Calling live APIs for flights, hotels, and climate...", 350);
-
       setPipelineStep(3);
       const flightUrl = new URL("/api/flights", `${API_BASE}/`);
       flightUrl.searchParams.set("origin", form.from);
