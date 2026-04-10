@@ -594,9 +594,11 @@ async def climate(city: str = Query(...), lang: str = Query("EN")):
         rain_obj = first_item.get("rain", {})
         if isinstance(rain_obj, dict):
             rain_value = rain_obj.get("3h", "N/A")
+        temp_kelvin = main.get("temp")
+        temp_celsius = round(temp_kelvin - 273.15) if temp_kelvin is not None else None
 
         return {
-            "temp": f"{round(main.get('temp', 0))}°C" if main.get("temp") is not None else "N/A",
+            "temp": f"{temp_celsius}°C" if temp_celsius is not None else "N/A",
             "humidity": f"{main.get('humidity', 0)}%" if main.get("humidity") is not None else "N/A",
             "condition": weather_text or "N/A",
             "windSpeed": wind.get("speed", 0),
