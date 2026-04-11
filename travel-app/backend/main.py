@@ -267,6 +267,9 @@ async def search_flights(
 
         origin_data = origin_json.get("data", [])
         dest_data = dest_json.get("data", [])
+        print("ORIGIN RESPONSE:", origin_json)
+        print("DEST RESPONSE:", dest_json)
+
 
         if not origin_data:
             raise HTTPException(status_code=404, detail=f"No airport found for origin: {origin}")
